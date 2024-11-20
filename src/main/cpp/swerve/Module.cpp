@@ -14,7 +14,8 @@
 // #include "DataLogger.h"
 
 
-Module::Module( const ModuleConfigs& configs ) :
+Module::Module( ModuleIO* io, const ModuleConfigs& configs ) :
+    io{std::move(io)},
     m_turnPIDController{ configs.turnTune.kP, configs.turnTune.kI, configs.turnTune.kD },
     m_drivePIDController{ configs.driveTune.kP, configs.driveTune.kI, configs.driveTune.kD }
 {
@@ -23,7 +24,7 @@ Module::Module( const ModuleConfigs& configs ) :
         units::unit_t<frc::SimpleMotorFeedforward<units::radian>::kv_unit>{configs.driveTune.kV}, 
         units::unit_t<frc::SimpleMotorFeedforward<units::radian>::ka_unit>{configs.driveTune.kA}
     };
-    m_name = fmt::format( "/Swerve Module({}-{})", configs.turnCanId, configs.driveCanId );
+    m_name = fmt::format( "/Module{}", configs.index );
 }
 
 // Sets each individual SwerveModule to an optimized SwerveModuleState

@@ -114,11 +114,12 @@ template <class UnitType>
 requires units::traits::is_unit_t<UnitType>::value
 void DataLogger::Log( const std::string &s, const std::vector<UnitType>& vec ) noexcept {
     static std::vector<double> a{256};
+    
     a.clear();
     for( size_t i=0; i<vec.size(); ++i ) {
         a.push_back(vec[i].value());
     }
-    DataLogger::Log( s + "(" + units::abbreviation(vec[0]) + ")", std::span<const double>( a ) );
+    DataLogger::Log( s + "(" + units::abbreviation(UnitType(0)) + ")", std::span<const double>( a ) );
 }
 
 template<class T>

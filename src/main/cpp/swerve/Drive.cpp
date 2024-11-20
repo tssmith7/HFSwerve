@@ -26,13 +26,21 @@ Drive::Drive(
     ModuleIO* flModule, 
     ModuleIO* frModule, 
     ModuleIO* blModule, 
-    ModuleIO* brModule) 
-    : m_kinematics{ frc::Translation2d{+( swerve::physical::kDriveBaseLength / 2 ), +( swerve::physical::kDriveBaseWidth / 2 )},
+    ModuleIO* brModule) :     
+    m_gyro{ gyroIO },
+    m_kinematics{ frc::Translation2d{+( swerve::physical::kDriveBaseLength / 2 ), +( swerve::physical::kDriveBaseWidth / 2 )},
                     frc::Translation2d{+( swerve::physical::kDriveBaseLength / 2 ), -( swerve::physical::kDriveBaseWidth / 2 )},
                     frc::Translation2d{-( swerve::physical::kDriveBaseLength / 2 ), +( swerve::physical::kDriveBaseWidth / 2 )},
-                    frc::Translation2d{-( swerve::physical::kDriveBaseLength / 2 ), -( swerve::physical::kDriveBaseWidth / 2 )} }
-    , m_odometry{ m_kinematics, frc::Rotation2d{}, wpi::array<frc::SwerveModulePosition,4>{wpi::empty_array}, frc::Pose2d{} }
+                    frc::Translation2d{-( swerve::physical::kDriveBaseLength / 2 ), -( swerve::physical::kDriveBaseWidth / 2 )} },
+    m_odometry{ m_kinematics, frc::Rotation2d{}, wpi::array<frc::SwerveModulePosition,4>{wpi::empty_array}, frc::Pose2d{} }
 {
+    m_modules[0] = std::unique_ptr<Module>( new Module( flModule, flconfig ) );
+    m_modules[1] = std::unique_ptr<Module>( new Module( frModule, frconfig ) );
+    m_modules[2] = std::unique_ptr<Module>( new Module( blModule, blconfig ) );
+    m_modules[3] = std::unique_ptr<Module>( new Module( brModule, brconfig ) );
+
+    TalonOdometryThread::GetInstance()->Start();
+    
     frc::SmartDashboard::PutData("Field", &m_field);
 
     const units::meter_t kDriveBaseRadius = 
@@ -63,7 +71,7 @@ Drive::Drive(
     pathplanner::PathPlannerLogging::setLogTargetPoseCallback( 
         [this] (frc::Pose2d p) { DataLogger::Log( "Odometry/TrajectorySetpoint", p ); } );
 
-    sysId = new frc2::sysid::SysIdRoutine{ 
+    sysId = std::unique_ptr<frc2::sysid::SysIdRoutine>( new frc2::sysid::SysIdRoutine{ 
         frc2::sysid::Config{ std::nullopt, std::nullopt, std::nullopt, std::nullopt },
         frc2::sysid::Mechanism { 
             [this] (units::volt_t volts) { 
@@ -74,7 +82,7 @@ Drive::Drive(
             nullptr,
             this
         }
-    };
+    } );
 
 }
 

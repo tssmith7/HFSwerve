@@ -6,6 +6,8 @@
 
 #include <frc2/command/CommandPtr.h>
 
+#include "swerve/Drive.h"
+
 class RobotContainer {
  public:
   RobotContainer();
@@ -14,4 +16,6 @@ class RobotContainer {
 
  private:
   void ConfigureBindings();
+
+  Drive *m_drive;
 };

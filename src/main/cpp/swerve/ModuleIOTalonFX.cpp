@@ -47,7 +47,7 @@ ModuleIOTalonFX::ModuleIOTalonFX( ModuleConfigs configs )
   turnPositionQueue = TalonOdometryThread::GetInstance()->RegisterSignal( m_turnMotor, &turnPosition );
 }
 
-void ModuleIOTalonFX::UpdateInputs(Inputs inputs) {
+void ModuleIOTalonFX::UpdateInputs(Inputs& inputs) {
   ctre::phoenix6::BaseStatusSignal::RefreshAll(
     drivePosition, 
     driveVelocity, 

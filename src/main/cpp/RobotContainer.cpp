@@ -6,7 +6,21 @@
 
 #include <frc2/command/Commands.h>
 
+#include "swerve/GyroIOPigeon2.h"
+#include "swerve/ModuleIOTalonFX.h"
+
+#include "swerve/SwerveConstants.h"
+
 RobotContainer::RobotContainer() {
+
+  m_drive = new Drive( 
+    new GyroIOPigeon2( 22, "drive" ), 
+    new ModuleIOTalonFX( flconfig ),
+    new ModuleIOTalonFX( frconfig ),
+    new ModuleIOTalonFX( blconfig ),
+    new ModuleIOTalonFX( brconfig )
+  );
+
   ConfigureBindings();
 }
 

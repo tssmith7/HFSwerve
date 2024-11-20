@@ -1,7 +1,7 @@
 #pragma once
 
-#include <vector>
 #include <queue>
+#include <vector>
 #include <thread>
 #include <mutex>
 
@@ -29,8 +29,8 @@ private:
     static TalonOdometryThread *singleton;
     std::mutex signalsLock;
     std::vector<ctre::phoenix6::BaseStatusSignal*> signals;
-    std::vector<std::queue<units::second_t>> timestampQueues;
-    std::vector<std::queue<double>> queues;
+    std::vector<std::queue<units::second_t> *> timestampQueues;
+    std::vector<std::queue<double> *> queues;
     std::thread thread;
     bool isCANFD;
 };

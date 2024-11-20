@@ -16,7 +16,7 @@
 // Class for each swerve module on the robot
 class Module {
 public:
-    Module( const ModuleConfigs& configs );
+    Module( ModuleIO* io, const ModuleConfigs& configs );
     void Periodic();
     frc::SwerveModuleState RunSetpoint( const frc::SwerveModuleState& state );
     void RunCharacterization( const units::volt_t volts );
@@ -34,7 +34,7 @@ public:
 private:
     std::string m_name;
 
-    ModuleIO* io;
+    std::unique_ptr<ModuleIO> io;
 
     ModuleIO::Inputs inputs;
 

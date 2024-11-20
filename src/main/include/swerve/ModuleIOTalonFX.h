@@ -12,20 +12,22 @@ class ModuleIOTalonFX : public ModuleIO {
 public:
     ModuleIOTalonFX( ModuleConfigs configs );
 
-    virtual void UpdateInputs(ModuleIO::Inputs inputs);
+    virtual void UpdateInputs(ModuleIO::Inputs& inputs) override;
 
-    virtual void setDriveVoltage( units::volt_t volts );
+    virtual void setDriveVoltage( units::volt_t volts ) override;
 
-    virtual void setTurnVoltage( units::volt_t volts );
+    virtual void setTurnVoltage( units::volt_t volts ) override;
 
-    virtual void setDriveBrakeMode( bool enable );
+    virtual void setDriveBrakeMode( bool enable ) override;
 
-    virtual void setTurnBrakeMode( bool enable );
+    virtual void setTurnBrakeMode( bool enable ) override;
 
 private:
     ctre::phoenix6::hardware::TalonFX m_driveMotor;
     ctre::phoenix6::hardware::TalonFX m_turnMotor;
     ctre::phoenix6::hardware::CANcoder m_encoder;
+
+    std::queue<units::second_t>* timestampQueue;
 
     ctre::phoenix6::StatusSignal<units::turn_t> drivePosition = m_driveMotor.GetPosition();
     std::queue<double>* drivePositionQueue;
@@ -45,6 +47,4 @@ private:
     const double turnGearRatio = 150.0 / 7.0;
 
     bool isTurnMotorInverted = true;
-
-    std::queue<units::second_t>* timestampQueue;
 };

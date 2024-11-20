@@ -8,17 +8,57 @@
 #include <units/angular_velocity.h>
 #include <units/angular_acceleration.h>
 
+#include "swerve/ModuleIO.h"
+
+const TuningParams turnTune = { 5.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };      // turn PIDSGVA
+const TuningParams driveTune = { 0.1, 0.0, 0.0, 0.0, 0.0, 0.113, 0.0 };   // drive PIDSGVA
+
+const ModuleConfigs flconfig = {
+    1,          // index
+    "drive",    // canBus
+    1,          // driveCanId
+    2,          // turnCanId
+    9,          // encoderCanId
+    -0.322,     // absoluteEncoderOffset
+    turnTune,   // turn PIDSGVA
+    driveTune   // drive PIDSGVA
+};
+
+const ModuleConfigs frconfig = {
+    2,          // index
+    "drive",    // canBus
+    3,          // driveCanId
+    4,          // turnCanId
+    10,         // encoderCanId
+    0.342,      // absoluteEncoderOffset
+    turnTune,   // turn PIDSGVA
+    driveTune   // drive PIDSGVA
+};
+
+const ModuleConfigs blconfig = {
+    3,          // index
+    "drive",    // canBus
+    5,          // driveCanId
+    6,          // turnCanId
+    11,         // encoderCanId
+    0.097,      // absoluteEncoderOffset
+    turnTune,   // turn PIDSGVA
+    driveTune   // drive PIDSGVA
+};
+
+const ModuleConfigs brconfig = {
+    4,          // index
+    "drive",    // canBus
+    7,          // driveCanId
+    8,          // turnCanId
+    12,         // encoderCanId
+    0.390,      // absoluteEncoderOffset
+    turnTune,   // turn PIDSGVA
+    driveTune   // drive PIDSGVA
+};
+
 namespace swerve {
     namespace pidf {
-        constexpr double kTurnP = 5.0;
-        constexpr double kTurnI = 0.0;
-        constexpr double kTurnD = 0.0;
-
-        constexpr double kDriveP = 0.1;
-        constexpr double kDriveI = 0.0;
-        constexpr double kDriveD = 0.0;
-        constexpr double kDriveV = 0.113;
-
             // Holonomic Controller Constants
         constexpr double X_Holo_kP = 1;
         constexpr double X_Holo_kI = 0;

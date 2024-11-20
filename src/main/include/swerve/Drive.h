@@ -38,15 +38,15 @@ public:
     frc2::CommandPtr SysIdDynamic( frc2::sysid::Direction dir ) { return sysId->Dynamic( dir ); }
 
 private:
-    Module* m_modules[4];
-    GyroIO* m_gyro;
+    std::unique_ptr<Module> m_modules[4];
+    std::unique_ptr<GyroIO> m_gyro;
 
     GyroIO::Inputs gyroInputs;
     
     frc::SwerveDriveKinematics<4> m_kinematics;
     frc::SwerveDrivePoseEstimator<4> m_odometry;
 
-    frc2::sysid::SysIdRoutine* sysId;
+    std::unique_ptr<frc2::sysid::SysIdRoutine> sysId;
 
     units::degree_t field_offset;
     units::degree_t driver_offset;
