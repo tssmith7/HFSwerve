@@ -1,0 +1,199 @@
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
+
+#include <units/math.h>
+
+#include "DataLogger.h"
+#include "swerve/Drive.h"
+#include "swerve/SwerveConstants.h"
+#include "swerve/TalonOdometryThread.h"
+
+#include <frc/DriverStation.h>
+#include <frc/Filesystem.h>
+#include <frc/trajectory/TrajectoryUtil.h>
+
+#include <frc/smartdashboard/SmartDashboard.h>
+
+#include <pathplanner/lib/auto/AutoBuilder.h>
+#include <pathplanner/lib/util/PathPlannerLogging.h>
+#include <pathplanner/lib/util/HolonomicPathFollowerConfig.h>
+#include <pathplanner/lib/util/PIDConstants.h>
+#include <pathplanner/lib/util/ReplanningConfig.h>
+
+Drive::Drive(
+    GyroIO* gyroIO, 
+    ModuleIO* flModule, 
+    ModuleIO* frModule, 
+    ModuleIO* blModule, 
+    ModuleIO* brModule) 
+    : m_kinematics{ frc::Translation2d{+( swerve::physical::kDriveBaseLength / 2 ), +( swerve::physical::kDriveBaseWidth / 2 )},
+                    frc::Translation2d{+( swerve::physical::kDriveBaseLength / 2 ), -( swerve::physical::kDriveBaseWidth / 2 )},
+                    frc::Translation2d{-( swerve::physical::kDriveBaseLength / 2 ), +( swerve::physical::kDriveBaseWidth / 2 )},
+                    frc::Translation2d{-( swerve::physical::kDriveBaseLength / 2 ), -( swerve::physical::kDriveBaseWidth / 2 )} }
+    , m_odometry{ m_kinematics, frc::Rotation2d{}, wpi::array<frc::SwerveModulePosition,4>{wpi::empty_array}, frc::Pose2d{} }
+{
+    frc::SmartDashboard::PutData("Field", &m_field);
+
+    const units::meter_t kDriveBaseRadius = 
+        units::math::hypot(swerve::physical::kDriveBaseWidth, swerve::physical::kDriveBaseLength) / 2.0;
+
+    pathplanner::AutoBuilder::configureHolonomic(
+        [this](){ return GetPose(); },
+        [this](frc::Pose2d pose){ SetPose(pose); },
+        [this](){return m_kinematics.ToChassisSpeeds(GetModuleStates());},
+        [this](frc::ChassisSpeeds speeds){ RunVelocity(speeds); },
+        pathplanner::HolonomicPathFollowerConfig( // HolonomicPathFollowerConfig, this should likely live in your Constants class
+            pathplanner::PIDConstants(4.0, 0.0, 0.0), // Translation PID constants
+            pathplanner::PIDConstants(4.0, 0.0, 0.0), // Rotation PID constants
+            swerve::physical::kMaxDriveSpeed, // Max module speed
+            kDriveBaseRadius, // Drive base radius. Distance from robot center to furthest module.
+            pathplanner::ReplanningConfig() // Default path replanning config. See the API for the options here
+        ),
+        []() {
+            // Boolean supplier that controls when the path will be mirrored for the red alliance
+            // This will flip the path being followed to the red side of the field.
+            // THE ORIGIN WILL REMAIN ON THE BLUE SIDE
+            return frc::DriverStation::GetAlliance() == frc::DriverStation::Alliance::kRed;
+        },
+        this
+    );
+    pathplanner::PathPlannerLogging::setLogActivePathCallback( 
+        [this] (std::vector<frc::Pose2d> pv) { DataLogger::Log( "Odometry/Trajectory", pv ); } );
+    pathplanner::PathPlannerLogging::setLogTargetPoseCallback( 
+        [this] (frc::Pose2d p) { DataLogger::Log( "Odometry/TrajectorySetpoint", p ); } );
+
+    sysId = new frc2::sysid::SysIdRoutine{ 
+        frc2::sysid::Config{ std::nullopt, std::nullopt, std::nullopt, std::nullopt },
+        frc2::sysid::Mechanism { 
+            [this] (units::volt_t volts) { 
+                for( int i=0; i<4; ++i ) {
+                    m_modules[i]->RunCharacterization( volts );
+                }
+            },
+            nullptr,
+            this
+        }
+    };
+
+}
+
+void Drive::RunVelocity( frc::ChassisSpeeds speeds ) {
+
+    frc::ChassisSpeeds discreteSpeeds = frc::ChassisSpeeds::Discretize( speeds, 20_ms );
+
+    wpi::array<frc::SwerveModuleState,4> desiredStates = m_kinematics.ToSwerveModuleStates( discreteSpeeds );
+
+    m_kinematics.DesaturateWheelSpeeds( &desiredStates, swerve::physical::kMaxDriveSpeed );
+
+    wpi::array<frc::SwerveModuleState,4> optimizedStates{wpi::empty_array};
+    for( int i=0; i<4; ++i ) {
+        optimizedStates[i] = m_modules[i]->RunSetpoint( desiredStates[i] );
+    }
+
+    // LOG desiredStates and optimizedStates HERE!!!
+}
+
+void Drive::Periodic( void ) {
+
+        // Get new input values
+    TalonOdometryThread::GetInstance()->odometryLock.lock();
+    m_gyro->UpdateInputs( gyroInputs );
+    for( int i=0; i<4; ++i ) {
+        m_modules[i]->UpdateInputs();
+    }
+    TalonOdometryThread::GetInstance()->odometryLock.unlock();
+
+        // Log new input values
+    gyroInputs.processInputs( "Drive/Gyro" );
+    for( int i=0; i<4; ++i ) {
+        m_modules[i]->Periodic();
+    }
+
+    if(frc::DriverStation::IsDisabled() && !m_have_driver_offset ) {
+        auto pose = m_odometry.GetEstimatedPosition();
+        field_offset = pose.Rotation().Degrees();
+        if(frc::DriverStation::GetAlliance() == frc::DriverStation::Alliance::kRed) {
+            driver_offset = field_offset + 180_deg;
+        } else {
+            driver_offset = field_offset;
+        }
+    } else if( !frc::DriverStation::IsDisabled() && !m_have_driver_offset ) {
+            // Only get a driver offset on the first enabling..
+        m_have_driver_offset = true;
+         fmt::print( "SwerveDriveSubsystem::Periodic -- Stop getting offset has {} = {:.5}\n", m_have_driver_offset, driver_offset.value() );
+    }
+
+    if( frc::DriverStation::IsDisabled() ) {
+        for( int i=0; i<4; ++i ) {
+            m_modules[i]->Stop();
+        }
+
+        DataLogger::Log( "Swerve/Setpoints", std::vector<double>{} );
+        DataLogger::Log( "Swerve/SetpointsOptimized", std::vector<double>{} );
+    }
+
+        // Update odometry
+    const std::vector<units::second_t>& sampleTimestamps = m_modules[0]->getOdometryTimestamps();
+    size_t sampleCount = sampleTimestamps.size();
+    wpi::array<frc::SwerveModulePosition,4U> modulePositions{wpi::empty_array};
+    for( size_t i=0; i<sampleCount; ++i ) {
+        for( int moduleIndex=0; moduleIndex<4; ++ moduleIndex ) {
+            modulePositions[moduleIndex] = m_modules[moduleIndex]->getOdometryPositions()[i];
+        }
+
+        m_odometry.UpdateWithTime( sampleTimestamps[i], gyroInputs.odometryYawPositions[i], modulePositions );
+    }
+
+    
+    DataLogger::Log( "Swerve/Actual States", GetModuleStates() );
+            //     DataLogger::Log( "Swerve/Desired States", m_desiredStates );
+            // }
+
+    m_field.SetRobotPose( m_odometry.GetEstimatedPosition() );
+}
+
+wpi::array<frc::SwerveModuleState,4U> Drive::GetModuleStates() {
+    wpi::array<frc::SwerveModuleState,4U> states{wpi::empty_array};
+    for( int i=0; i<4; ++i ) {
+        states[i] = m_modules[i]->GetState();
+    }
+    return states;
+}
+
+// Returns the pose2d of the robot
+frc::Pose2d Drive::GetPose( void ) {
+    return m_odometry.GetEstimatedPosition();
+}
+
+
+// Resets the gyro to an angle
+void Drive::ResetDriverOrientation( units::degree_t angle ) {
+    DataLogger::Log( "Swerve/Status", fmt::format("Reseting Driver Orientation to {}..", angle ) );
+    driver_offset = angle;
+}
+
+// Resets the pose to a position
+void Drive::SetPose( frc::Pose2d pose ) {
+    DataLogger::Log( "Swerve/Status", fmt::format("Reseting Pose to <{},{},{}> with GyroYaw {}..", 
+                    pose.X(), pose.Y(), pose.Rotation().Degrees(), gyroInputs.yawPosition ) );
+    m_odometry.ResetPosition(
+        gyroInputs.yawPosition,
+        {
+            m_modules[0]->GetPosition(),  m_modules[1]->GetPosition(), 
+            m_modules[2]->GetPosition(),  m_modules[3]->GetPosition() 
+        },
+        pose
+    );
+}
+
+void GyroIO::Inputs::processInputs( std::string key ) {
+    AUTOLOG( key, connected )
+    AUTOLOG( key, yawPosition )
+    AUTOLOG( key, yawVelocity )
+
+    AUTOLOG( key, odometryYawTimestamps )
+    AUTOLOG( key, odometryYawPositions )
+    AUTOLOG( key, odometryTurnPositions )
+}
+
