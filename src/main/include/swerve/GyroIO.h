@@ -19,5 +19,5 @@ public:
         void processInputs( std::string key );
     };
 
-    virtual void UpdateInputs(Inputs &inputs) =0;
+    virtual void UpdateInputs(Inputs &inputs) {}
 };

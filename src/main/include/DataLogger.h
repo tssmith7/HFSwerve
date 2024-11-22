@@ -17,6 +17,7 @@
 
 #include <frc/geometry/Pose2d.h>
 #include <frc/kinematics/SwerveModuleState.h>
+#include <frc/kinematics/SwerveModulePosition.h>
 
 /*
  *  AUTOLOG macro can log the following:
@@ -60,6 +61,7 @@ public:
     static void Log( const std::string& s, const frc::Pose2d& p );
     static void Log( const std::string& s, const std::vector<frc::Pose2d>& pv );
     static void Log( const std::string& s, const wpi::array<frc::SwerveModuleState, 4U> &sms );
+    static void Log( const std::string& s, const wpi::array<frc::SwerveModulePosition, 4U> &sms );
 
         // A units library type.
     template <class UnitType>

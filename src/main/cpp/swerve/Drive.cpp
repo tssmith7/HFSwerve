@@ -11,7 +11,8 @@
 
 #include <frc/DriverStation.h>
 #include <frc/Filesystem.h>
-#include <frc/trajectory/TrajectoryUtil.h>
+
+#include <frc/geometry/Twist2d.h>
 
 #include <frc/smartdashboard/SmartDashboard.h>
 
@@ -32,7 +33,7 @@ Drive::Drive(
                     frc::Translation2d{+( swerve::physical::kDriveBaseLength / 2 ), -( swerve::physical::kDriveBaseWidth / 2 )},
                     frc::Translation2d{-( swerve::physical::kDriveBaseLength / 2 ), +( swerve::physical::kDriveBaseWidth / 2 )},
                     frc::Translation2d{-( swerve::physical::kDriveBaseLength / 2 ), -( swerve::physical::kDriveBaseWidth / 2 )} },
-    m_odometry{ m_kinematics, frc::Rotation2d{}, wpi::array<frc::SwerveModulePosition,4>{wpi::empty_array}, frc::Pose2d{} }
+    m_odometry{ m_kinematics, rawGyroRotation, lastModulePositions, frc::Pose2d{} }
 {
     m_modules[0] = std::unique_ptr<Module>( new Module( flModule, flconfig ) );
     m_modules[1] = std::unique_ptr<Module>( new Module( frModule, frconfig ) );
@@ -99,7 +100,8 @@ void Drive::RunVelocity( frc::ChassisSpeeds speeds ) {
         optimizedStates[i] = m_modules[i]->RunSetpoint( desiredStates[i] );
     }
 
-    // LOG desiredStates and optimizedStates HERE!!!
+    DataLogger::Log( "Swerve/desiredStates", desiredStates );
+    DataLogger::Log( "Swerve/optimizedStates", optimizedStates );
 }
 
 void Drive::Periodic( void ) {
@@ -113,51 +115,59 @@ void Drive::Periodic( void ) {
     TalonOdometryThread::GetInstance()->odometryLock.unlock();
 
         // Log new input values
-    gyroInputs.processInputs( "Drive/Gyro" );
+    gyroInputs.processInputs( "Swerve/Gyro" );
     for( int i=0; i<4; ++i ) {
         m_modules[i]->Periodic();
     }
 
-    if(frc::DriverStation::IsDisabled() && !m_have_driver_offset ) {
-        auto pose = m_odometry.GetEstimatedPosition();
-        field_offset = pose.Rotation().Degrees();
-        if(frc::DriverStation::GetAlliance() == frc::DriverStation::Alliance::kRed) {
-            driver_offset = field_offset + 180_deg;
-        } else {
-            driver_offset = field_offset;
-        }
-    } else if( !frc::DriverStation::IsDisabled() && !m_have_driver_offset ) {
-            // Only get a driver offset on the first enabling..
-        m_have_driver_offset = true;
-         fmt::print( "SwerveDriveSubsystem::Periodic -- Stop getting offset has {} = {:.5}\n", m_have_driver_offset, driver_offset.value() );
-    }
+    // if(frc::DriverStation::IsDisabled() && !m_have_driver_offset ) {
+    //     auto pose = m_odometry.GetEstimatedPosition();
+    //     field_offset = pose.Rotation().Degrees();
+    //     if(frc::DriverStation::GetAlliance() == frc::DriverStation::Alliance::kRed) {
+    //         driver_offset = field_offset + 180_deg;
+    //     } else {
+    //         driver_offset = field_offset;
+    //     }
+    // } else if( !frc::DriverStation::IsDisabled() && !m_have_driver_offset ) {
+    //         // Only get a driver offset on the first enabling..
+    //     m_have_driver_offset = true;
+    //      fmt::print( "SwerveDriveSubsystem::Periodic -- Stop getting offset has {} = {:.5}\n", m_have_driver_offset, driver_offset.value() );
+    // }
 
     if( frc::DriverStation::IsDisabled() ) {
         for( int i=0; i<4; ++i ) {
             m_modules[i]->Stop();
         }
 
-        DataLogger::Log( "Swerve/Setpoints", std::vector<double>{} );
-        DataLogger::Log( "Swerve/SetpointsOptimized", std::vector<double>{} );
+        DataLogger::Log( "Swerve/desiredStates", std::vector<double>{} );
+        DataLogger::Log( "Swerve/optimizedStates", std::vector<double>{} );
     }
 
         // Update odometry
     const std::vector<units::second_t>& sampleTimestamps = m_modules[0]->getOdometryTimestamps();
     size_t sampleCount = sampleTimestamps.size();
     wpi::array<frc::SwerveModulePosition,4U> modulePositions{wpi::empty_array};
+    wpi::array<frc::SwerveModulePosition,4U> moduleDeltas{wpi::empty_array};
     for( size_t i=0; i<sampleCount; ++i ) {
         for( int moduleIndex=0; moduleIndex<4; ++ moduleIndex ) {
             modulePositions[moduleIndex] = m_modules[moduleIndex]->getOdometryPositions()[i];
+            moduleDeltas[moduleIndex] = {
+                modulePositions[moduleIndex].distance - lastModulePositions[moduleIndex].distance,
+                modulePositions[moduleIndex].angle };
+            lastModulePositions[moduleIndex] = modulePositions[moduleIndex];
         }
 
-        m_odometry.UpdateWithTime( sampleTimestamps[i], gyroInputs.odometryYawPositions[i], modulePositions );
+        if( gyroInputs.connected ) {
+            rawGyroRotation = gyroInputs.odometryYawPositions[i];
+        } else {
+            frc::Twist2d twist = m_kinematics.ToTwist2d(moduleDeltas);
+            rawGyroRotation += twist.dtheta;
+        }
+
+        m_odometry.UpdateWithTime( sampleTimestamps[i], rawGyroRotation, modulePositions );
     }
 
-    
-    DataLogger::Log( "Swerve/Actual States", GetModuleStates() );
-            //     DataLogger::Log( "Swerve/Desired States", m_desiredStates );
-            // }
-
+    DataLogger::Log( "Swerve/actualStates", GetModuleStates() );
     m_field.SetRobotPose( m_odometry.GetEstimatedPosition() );
 }
 
@@ -174,6 +184,11 @@ frc::Pose2d Drive::GetPose( void ) {
     return m_odometry.GetEstimatedPosition();
 }
 
+// Returns the rotation of the robot
+frc::Rotation2d Drive::GetRotation( void ) {
+    return GetPose().Rotation();
+}
+
 
 // Resets the gyro to an angle
 void Drive::ResetDriverOrientation( units::degree_t angle ) {
@@ -184,9 +199,9 @@ void Drive::ResetDriverOrientation( units::degree_t angle ) {
 // Resets the pose to a position
 void Drive::SetPose( frc::Pose2d pose ) {
     DataLogger::Log( "Swerve/Status", fmt::format("Reseting Pose to <{},{},{}> with GyroYaw {}..", 
-                    pose.X(), pose.Y(), pose.Rotation().Degrees(), gyroInputs.yawPosition ) );
+                    pose.X(), pose.Y(), pose.Rotation().Degrees(), rawGyroRotation ) );
     m_odometry.ResetPosition(
-        gyroInputs.yawPosition,
+        rawGyroRotation,
         {
             m_modules[0]->GetPosition(),  m_modules[1]->GetPosition(), 
             m_modules[2]->GetPosition(),  m_modules[3]->GetPosition() 

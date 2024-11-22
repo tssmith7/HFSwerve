@@ -29,6 +29,7 @@ public:
 
     frc::Pose2d GetPose();
     void SetPose( frc::Pose2d pose );
+    frc::Rotation2d GetRotation();
 
     void ResetDriverOrientation( units::degree_t angle );
 
@@ -42,7 +43,9 @@ private:
     std::unique_ptr<GyroIO> m_gyro;
 
     GyroIO::Inputs gyroInputs;
-    
+    units::radian_t rawGyroRotation{0_rad};
+    wpi::array<frc::SwerveModulePosition,4> lastModulePositions{wpi::empty_array};
+
     frc::SwerveDriveKinematics<4> m_kinematics;
     frc::SwerveDrivePoseEstimator<4> m_odometry;
 

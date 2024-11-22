@@ -24,6 +24,7 @@ Module::Module( ModuleIO* io, const ModuleConfigs& configs ) :
         units::unit_t<frc::SimpleMotorFeedforward<units::radian>::kv_unit>{configs.driveTune.kV}, 
         units::unit_t<frc::SimpleMotorFeedforward<units::radian>::ka_unit>{configs.driveTune.kA}
     };
+    m_turnPIDController.EnableContinuousInput( -std::numbers::pi , std::numbers::pi );
     m_name = fmt::format( "/Module{}", configs.index );
 }
 
@@ -34,19 +35,19 @@ void Module::Periodic( ) {
     // On first cycle reset the motor encoder to the absolute encoder value
     if( !turnRelativeOffset && units::math::fabs(inputs.turnAbsolutePosition) > 1E-6_rad ) {
         turnRelativeOffset = inputs.turnAbsolutePosition - inputs.turnPosition;
+        DataLogger::Log( "Swerve" + m_name + "/turnRelativeOffset", turnRelativeOffset );
     }
 
     if( angleSetpoint ) {
         // Run closed loop control on angle
-
         io->setTurnVoltage( m_turnPIDController.Calculate( GetAngle().value(), angleSetpoint->value() ) * 12_V );
 
         if( speedSetpoint ) {
             units::meters_per_second_t adjustSpeed = speedSetpoint.value() * 
                 std::pow( cos( m_turnPIDController.GetPositionError() ), 3); 
 
-            units::radians_per_second_t wheelVelocity = adjustSpeed / swerve::physical::kDriveMetersPerRotation;
-
+            units::radians_per_second_t wheelVelocity = adjustSpeed / swerve::physical::kDriveMetersPerWheelRotation;
+            
             io->setDriveVoltage( m_driveFF->Calculate( wheelVelocity ) 
                 + m_drivePIDController.Calculate( inputs.driveVelocity.value(), wheelVelocity.value() ) * 12_V );
         }
@@ -56,8 +57,8 @@ void Module::Periodic( ) {
     size_t sampleCount = inputs.odometryTimestamps.size();
     odometryPositions.clear();
     for( size_t i=0; i<sampleCount; ++i ) {
-        units::meter_t position = inputs.odometryDrivePositions[i] * swerve::physical::kDriveMetersPerRotation;
-        units::radian_t angle = inputs.odometryTurnPositions[i] + (turnRelativeOffset.has_value() ? turnRelativeOffset.value() : 0_rad);
+        units::meter_t position = inputs.odometryDrivePositions[i] * swerve::physical::kDriveMetersPerWheelRotation;
+        units::radian_t angle = inputs.odometryTurnPositions[i] + turnRelativeOffset.value_or(0_rad);
         odometryPositions.push_back( frc::SwerveModulePosition( position, angle ) );
     }
 }
@@ -72,7 +73,7 @@ frc::SwerveModuleState Module::RunSetpoint( const frc::SwerveModuleState& state 
     angleSetpoint = optimizedState.angle.Radians();
     speedSetpoint = optimizedState.speed;
 
-    return optimizedState;
+     return optimizedState;
 }
 
 void Module::RunCharacterization( const units::volt_t volts ) {
@@ -94,11 +95,11 @@ units::radian_t Module::GetAngle() {
 
 // Returns the current state of the SwerveModule
 frc::SwerveModuleState Module::GetState( void ) {
-    return { inputs.driveVelocity * swerve::physical::kDriveMetersPerRotation, GetAngle() };
+    return { inputs.driveVelocity * swerve::physical::kDriveMetersPerWheelRotation, GetAngle() };
 }
 
 frc::SwerveModulePosition Module::GetPosition( void ) {
-    return { inputs.drivePosition * swerve::physical::kDriveMetersPerRotation, GetAngle() };
+    return { inputs.drivePosition * swerve::physical::kDriveMetersPerWheelRotation, GetAngle() };
 }
 
 void Module::Stop() {

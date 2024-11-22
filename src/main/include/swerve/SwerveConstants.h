@@ -1,6 +1,7 @@
 #pragma once
 
 #include <numbers>
+#include <units/math.h>
 #include <units/length.h>
 #include <units/angle.h>
 #include <units/velocity.h>
@@ -10,7 +11,7 @@
 
 #include "swerve/ModuleIO.h"
 
-const TuningParams turnTune = { 5.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };      // turn PIDSGVA
+const TuningParams turnTune = { 0.8, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };      // turn PIDSGVA
 const TuningParams driveTune = { 0.1, 0.0, 0.0, 0.0, 0.0, 0.113, 0.0 };   // drive PIDSGVA
 
 const ModuleConfigs flconfig = {
@@ -95,6 +96,13 @@ namespace swerve {
     }
 
     namespace physical {
+        // The width of the drive base from the center of one module to another adjacent one.
+        constexpr units::meter_t kDriveBaseWidth = 23.25_in * 1.08;
+        constexpr units::meter_t kDriveBaseLength = 22.5_in * 1.08;
+
+        const units::meter_t kDriveBaseRadius = 
+            units::math::hypot(swerve::physical::kDriveBaseWidth, swerve::physical::kDriveBaseLength) / 2.0;
+
         // The wheel diameter.
         constexpr units::inch_t kWheelDiameter = 4_in;
 
@@ -111,20 +119,17 @@ namespace swerve {
 
         // The number of meters traveled per rotation of the drive motor
         // wheel circumference / gear ratio
-        constexpr meters_per_rev_t kDriveMetersPerRotation = std::numbers::pi * kWheelDiameter / (kDriveGearRatio *  1_tr );
+        constexpr meters_per_rev_t kDriveMetersPerWheelRotation = std::numbers::pi * kWheelDiameter / 1_tr;
 
         // Max drive speed of Mk4i swerve modules when motors turn maximum RPM.
-        constexpr units::meters_per_second_t kMaxDriveSpeed = kDriveRPM * kDriveMetersPerRotation;
+        constexpr units::meters_per_second_t kMaxDriveSpeed = kDriveRPM * kDriveMetersPerWheelRotation / kDriveGearRatio;
+        const units::radians_per_second_t kMaxTurnSpeed = 1_rad * (kMaxDriveSpeed / kDriveBaseRadius);
 
         // Gear ratio of the turn motors for SDS Mk4i.
         constexpr double kTurnGearRatio = 150.0 / 7.0;
 
-        // The width of the drive base from the center of one module to another adjacent one.
-        constexpr units::meter_t kDriveBaseWidth = 23.25_in * 1.08;
-        constexpr units::meter_t kDriveBaseLength = 22.5_in * 1.08;
-
         // The Maximum turning speed for the robot under Joystick control
-        constexpr units::revolutions_per_minute_t kTurnSpeedLimit =  60_rpm;
+        const units::revolutions_per_minute_t kTurnSpeedLimit = kMaxTurnSpeed;
 
         // The Maximum translation speed for the robot under Joystick control
         constexpr units::meters_per_second_t kDriveSpeedLimit = kMaxDriveSpeed;

@@ -4,27 +4,48 @@
 
 #include "RobotContainer.h"
 
+#include <frc/RobotBase.h>
 #include <frc2/command/Commands.h>
 
 #include "swerve/GyroIOPigeon2.h"
 #include "swerve/ModuleIOTalonFX.h"
+#include "swerve/ModuleIOSim.h"
 
 #include "swerve/SwerveConstants.h"
 
+#include "command/DriveCommands.h"
+
 RobotContainer::RobotContainer() {
 
-  m_drive = new Drive( 
-    new GyroIOPigeon2( 22, "drive" ), 
-    new ModuleIOTalonFX( flconfig ),
-    new ModuleIOTalonFX( frconfig ),
-    new ModuleIOTalonFX( blconfig ),
-    new ModuleIOTalonFX( brconfig )
-  );
-
+  if( frc::RobotBase::IsReal() ) {
+    m_drive = new Drive( 
+      new GyroIOPigeon2( 22, "drive" ), 
+      new ModuleIOTalonFX( flconfig ),
+      new ModuleIOTalonFX( frconfig ),
+      new ModuleIOTalonFX( blconfig ),
+      new ModuleIOTalonFX( brconfig )
+    );
+  } else {
+    m_drive = new Drive( 
+      new GyroIO(), 
+      new ModuleIOSim(),
+      new ModuleIOSim(),
+      new ModuleIOSim(),
+      new ModuleIOSim()
+    );
+  }
   ConfigureBindings();
 }
 
-void RobotContainer::ConfigureBindings() {}
+void RobotContainer::ConfigureBindings() {
+  m_drive->SetDefaultCommand( 
+    DriveCommands::JoystickDrive( m_drive,
+    [this] { return m_controller.GetLeftY(); },
+    [this] { return m_controller.GetLeftX(); },
+    [this] { return m_controller.GetRightX(); }
+    )
+  );
+}
 
 frc2::CommandPtr RobotContainer::GetAutonomousCommand() {
   return frc2::cmd::Print("No autonomous command configured");

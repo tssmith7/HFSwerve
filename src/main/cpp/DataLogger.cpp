@@ -86,6 +86,21 @@ void DataLogger::Log( const std::string &s, const wpi::array<frc::SwerveModuleSt
     Log( s, std::span{a} );
 }
 
+void DataLogger::Log( const std::string &s, const wpi::array<frc::SwerveModulePosition, 4U> &sms ) {
+    static double a[8];
+
+    if( sms.empty() ) {
+        Log( s, std::span<const double>{} );
+    } 
+
+    for( int i=0; i<4; ++i ) {
+        a[2*i] = sms[i].angle.Radians().value(); 
+        a[2*i + 1] = sms[i].distance.value();
+    }
+
+    Log( s, std::span{a} );
+}
+
 template<>
 void DataLogger::Log( const std::string &s, const std::optional<frc::Pose2d>& opt ) {
     if( opt.has_value() ) {
