@@ -14,7 +14,7 @@
 const double DEADBAND = 0.1;
 
 frc2::CommandPtr DriveCommands::JoystickDrive( 
-    Drive * d, 
+    Drive* d, 
     std::function<double()> xSupplier, 
     std::function<double()> ySupplier, 
     std::function<double()> omegaSupplier)
@@ -33,7 +33,7 @@ frc2::CommandPtr DriveCommands::JoystickDrive(
         double Vy = linearMagnitude * units::math::sin( linearDirection.Radians() );
         
         // Convert to field relative speeds
-        bool isFlipped = frc::DriverStation::GetAlliance() == frc::DriverStation::kBlue;
+        bool isFlipped = frc::DriverStation::GetAlliance() == frc::DriverStation::kRed;
 
         d->RunVelocity( 
             frc::ChassisSpeeds::FromFieldRelativeSpeeds(

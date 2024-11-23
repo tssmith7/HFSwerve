@@ -44,9 +44,6 @@ Drive::Drive(
     
     frc::SmartDashboard::PutData("Field", &m_field);
 
-    const units::meter_t kDriveBaseRadius = 
-        units::math::hypot(swerve::physical::kDriveBaseWidth, swerve::physical::kDriveBaseLength) / 2.0;
-
     pathplanner::AutoBuilder::configureHolonomic(
         [this](){ return GetPose(); },
         [this](frc::Pose2d pose){ SetPose(pose); },
@@ -56,7 +53,7 @@ Drive::Drive(
             pathplanner::PIDConstants(4.0, 0.0, 0.0), // Translation PID constants
             pathplanner::PIDConstants(4.0, 0.0, 0.0), // Rotation PID constants
             swerve::physical::kMaxDriveSpeed, // Max module speed
-            kDriveBaseRadius, // Drive base radius. Distance from robot center to furthest module.
+            swerve::physical::kDriveBaseRadius, // Drive base radius. Distance from robot center to furthest module.
             pathplanner::ReplanningConfig() // Default path replanning config. See the API for the options here
         ),
         []() {
@@ -217,6 +214,5 @@ void GyroIO::Inputs::processInputs( std::string key ) {
 
     AUTOLOG( key, odometryYawTimestamps )
     AUTOLOG( key, odometryYawPositions )
-    AUTOLOG( key, odometryTurnPositions )
 }
 

@@ -39,10 +39,11 @@ RobotContainer::RobotContainer() {
 
 void RobotContainer::ConfigureBindings() {
   m_drive->SetDefaultCommand( 
-    DriveCommands::JoystickDrive( m_drive,
-    [this] { return m_controller.GetLeftY(); },
-    [this] { return m_controller.GetLeftX(); },
-    [this] { return m_controller.GetRightX(); }
+    DriveCommands::JoystickDrive( 
+      m_drive,
+      [this] { return -m_controller.GetLeftY(); },
+      [this] { return -m_controller.GetLeftX(); },
+      [this] { return m_controller.GetRightX(); }
     )
   );
 }

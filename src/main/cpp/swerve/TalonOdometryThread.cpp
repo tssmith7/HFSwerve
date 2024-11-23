@@ -43,7 +43,6 @@ std::queue<double>* TalonOdometryThread::RegisterSignal(
 void TalonOdometryThread::Start() {
     if( timestampQueues.size() > 0 ) {
         thread = std::thread( &TalonOdometryThread::Run, this );
-        // thread.detach();
     }
 }
 

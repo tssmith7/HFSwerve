@@ -14,7 +14,6 @@ public:
 
         std::vector<units::second_t> odometryYawTimestamps;
         std::vector<units::radian_t> odometryYawPositions;
-        std::vector<units::radian_t> odometryTurnPositions;
 
         void processInputs( std::string key );
     };
