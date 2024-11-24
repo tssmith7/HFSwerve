@@ -104,12 +104,12 @@ void Drive::RunVelocity( frc::ChassisSpeeds speeds ) {
 void Drive::Periodic( void ) {
 
         // Get new input values
-    TalonOdometryThread::GetInstance()->odometryLock.lock();
+    TalonOdometryThread::GetInstance()->odometryMutex.lock();
     m_gyro->UpdateInputs( gyroInputs );
     for( int i=0; i<4; ++i ) {
         m_modules[i]->UpdateInputs();
     }
-    TalonOdometryThread::GetInstance()->odometryLock.unlock();
+    TalonOdometryThread::GetInstance()->odometryMutex.unlock();
 
         // Log new input values
     gyroInputs.LogInputs( "Swerve/Gyro" );

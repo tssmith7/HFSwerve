@@ -20,14 +20,14 @@ public:
     void Start();
 
     static const units::hertz_t ODOMETRY_FREQUENCY;
-    std::mutex odometryLock;
+    std::mutex odometryMutex;
 
 private:
     TalonOdometryThread() {}
     void Run();
 
     static TalonOdometryThread *singleton;
-    std::mutex signalsLock;
+    std::mutex signalsMutex;
     std::vector<ctre::phoenix6::BaseStatusSignal*> signals;
     std::vector<std::queue<units::second_t> *> timestampQueues;
     std::vector<std::queue<double> *> queues;

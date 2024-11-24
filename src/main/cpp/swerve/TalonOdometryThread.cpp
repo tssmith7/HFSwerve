@@ -16,10 +16,10 @@ TalonOdometryThread* TalonOdometryThread::GetInstance() {
 }
 
 std::queue<units::second_t>* TalonOdometryThread::MakeTimestampQueue() {
-    odometryLock.lock();
+    odometryMutex.lock();
     std::queue<units::second_t>* tsQueue = new std::queue<units::second_t>{};
     timestampQueues.push_back( tsQueue );
-    odometryLock.unlock();
+    odometryMutex.unlock();
 
     return tsQueue;
 }
@@ -28,14 +28,14 @@ std::queue<double>* TalonOdometryThread::RegisterSignal(
     ctre::phoenix6::hardware::ParentDevice& device, 
     ctre::phoenix6::BaseStatusSignal* signal) 
 {
-    signalsLock.lock();
-    odometryLock.lock();
+    signalsMutex.lock();
+    odometryMutex.lock();
     isCANFD = ctre::phoenix6::CANBus::IsNetworkFD( device.GetNetwork() );
     signals.push_back( signal );
     std::queue<double>* newQ = new std::queue<double>{};
     queues.push_back( newQ );
-    odometryLock.unlock();
-    signalsLock.unlock();
+    odometryMutex.unlock();
+    signalsMutex.unlock();
 
     return newQ;
 }
@@ -51,7 +51,7 @@ void TalonOdometryThread::Run() {
     fmt::print( "       ============== TalonOdometryThread started ...\n" );
 
     while( 1 ) {
-        signalsLock.lock();
+        signalsMutex.lock();
         if( isCANFD ) {
             ctre::phoenix6::BaseStatusSignal::WaitForAll( 2.0 / ODOMETRY_FREQUENCY, signals );
         } else {
@@ -60,9 +60,9 @@ void TalonOdometryThread::Run() {
                 ctre::phoenix6::BaseStatusSignal::RefreshAll( signals );
             }
         }
-        signalsLock.unlock();
+        signalsMutex.unlock();
 
-        odometryLock.lock();
+        odometryMutex.lock();
         units::second_t timestamp = frc::Timer::GetFPGATimestamp();
         units::second_t totalLatency = 0_s;
         for( size_t i=0; i<signals.size(); ++i ) {
@@ -79,7 +79,7 @@ void TalonOdometryThread::Run() {
         for( size_t i=0; i<timestampQueues.size(); ++i ) {
             timestampQueues[i]->push( timestamp );
         }
-        odometryLock.unlock();
+        odometryMutex.unlock();
     }
 }
 
