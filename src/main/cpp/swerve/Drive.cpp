@@ -136,8 +136,8 @@ void Drive::Periodic( void ) {
             m_modules[i]->Stop();
         }
 
-        DataLogger::Log( "Swerve/desiredStates", std::vector<double>{} );
-        DataLogger::Log( "Swerve/optimizedStates", std::vector<double>{} );
+        DataLogger::Log( "Swerve/desiredStates", std::span<frc::SwerveModuleState>{} );
+        DataLogger::Log( "Swerve/optimizedStates", std::span<frc::SwerveModuleState>{} );
     }
 
         // Update odometry
@@ -164,12 +164,13 @@ void Drive::Periodic( void ) {
         m_odometry.UpdateWithTime( sampleTimestamps[i], rawGyroRotation, modulePositions );
     }
 
-    DataLogger::Log( "Swerve/actualStates", GetModuleStates() );
+    DataLogger::Log( "Swerve/actualStates",  GetModuleStates() );
+    DataLogger::Log( "Swerve/Pose2d", m_odometry.GetEstimatedPosition() );
     m_field.SetRobotPose( m_odometry.GetEstimatedPosition() );
 }
 
-wpi::array<frc::SwerveModuleState,4U> Drive::GetModuleStates() {
-    wpi::array<frc::SwerveModuleState,4U> states{wpi::empty_array};
+wpi::array<frc::SwerveModuleState,4U>& Drive::GetModuleStates() {
+    static wpi::array<frc::SwerveModuleState,4U> states{wpi::empty_array};
     for( int i=0; i<4; ++i ) {
         states[i] = m_modules[i]->GetState();
     }
