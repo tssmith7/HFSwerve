@@ -14,23 +14,14 @@
 // #include "DataLogger.h"
 
 
-Module::Module( ModuleIO* io, const ModuleConfigs& configs ) :
-    io{std::move(io)},
-    m_turnPIDController{ configs.turnTune.kP, configs.turnTune.kI, configs.turnTune.kD },
-    m_drivePIDController{ configs.driveTune.kP, configs.driveTune.kI, configs.driveTune.kD }
+Module::Module( ModuleIO* io ) : io{std::move(io)}
 {
-    m_driveFF = new frc::SimpleMotorFeedforward<units::radian>{ 
-        units::volt_t{configs.driveTune.kS},
-        units::unit_t<frc::SimpleMotorFeedforward<units::radian>::kv_unit>{configs.driveTune.kV}, 
-        units::unit_t<frc::SimpleMotorFeedforward<units::radian>::ka_unit>{configs.driveTune.kA}
-    };
-    m_turnPIDController.EnableContinuousInput( -std::numbers::pi , std::numbers::pi );
-    m_name = fmt::format( "/Module{}", configs.index );
+    m_name = fmt::format( "/Module{}", io->GetIndex() );
 }
 
 // Sets each individual SwerveModule to an optimized SwerveModuleState
 void Module::Periodic( ) {
-    inputs.processInputs( "Swerve" + m_name );
+    inputs.LogInputs( "Swerve" + m_name );
 
     // On first cycle reset the motor encoder to the absolute encoder value
     if( !turnRelativeOffset && units::math::fabs(inputs.turnAbsolutePosition) > 1E-6_rad ) {
@@ -40,16 +31,16 @@ void Module::Periodic( ) {
 
     if( angleSetpoint ) {
         // Run closed loop control on angle
-        io->setTurnVoltage( m_turnPIDController.Calculate( GetAngle().value(), angleSetpoint->value() ) * 12_V );
+        io->SetTurnPosition( angleSetpoint.value() );
 
         if( speedSetpoint ) {
-            units::meters_per_second_t adjustSpeed = speedSetpoint.value() * 
-                std::pow( cos( m_turnPIDController.GetPositionError() ), 3); 
+            units::radian_t angleError = angleSetpoint.value() - GetAngle();
+            units::meters_per_second_t adjustSpeed = 
+                speedSetpoint.value() * std::pow( units::math::cos( angleError ).value(), 3); 
 
             units::radians_per_second_t wheelVelocity = adjustSpeed / swerve::physical::kDriveMetersPerWheelRotation;
             
-            io->setDriveVoltage( m_driveFF->Calculate( wheelVelocity ) 
-                + m_drivePIDController.Calculate( inputs.driveVelocity.value(), wheelVelocity.value() ) * 12_V );
+            io->SetDriveWheelVelocity( wheelVelocity );
         }
     }
 
@@ -82,7 +73,7 @@ void Module::RunCharacterization( const units::volt_t volts ) {
 
         // Turn off closed loop velocity control
     speedSetpoint.reset();
-    io->setDriveVoltage( volts );
+    io->SetDriveOpenLoop( volts / 12_V );
 }
 
 units::radian_t Module::GetAngle() {
@@ -103,8 +94,8 @@ frc::SwerveModulePosition Module::GetPosition( void ) {
 }
 
 void Module::Stop() {
-    io->setTurnVoltage( 0_V );
-    io->setDriveVoltage( 0_V );
+    io->SetTurnOpenLoop( 0.0 );
+    io->SetDriveOpenLoop( 0.0 );
 
     angleSetpoint.reset();
     speedSetpoint.reset();
@@ -114,7 +105,7 @@ void Module::UpdateInputs() {
     io->UpdateInputs( inputs );
 }
 
-void ModuleIO::Inputs::processInputs( std::string key ) {
+void ModuleIO::Inputs::LogInputs( std::string key ) {
     AUTOLOG( key, drivePosition )
     AUTOLOG( key, driveVelocity )
     AUTOLOG( key, driveAppliedVolts )

@@ -20,18 +20,18 @@ RobotContainer::RobotContainer() {
   if( frc::RobotBase::IsReal() ) {
     m_drive = new Drive( 
       new GyroIOPigeon2( 22, "drive" ), 
-      new ModuleIOTalonFX( flconfig ),
-      new ModuleIOTalonFX( frconfig ),
-      new ModuleIOTalonFX( blconfig ),
-      new ModuleIOTalonFX( brconfig )
+      new ModuleIOTalonFX( swerve::pidf::flconfig ),
+      new ModuleIOTalonFX( swerve::pidf::frconfig ),
+      new ModuleIOTalonFX( swerve::pidf::blconfig ),
+      new ModuleIOTalonFX( swerve::pidf::brconfig )
     );
   } else {
     m_drive = new Drive( 
       new GyroIO(), 
-      new ModuleIOSim(),
-      new ModuleIOSim(),
-      new ModuleIOSim(),
-      new ModuleIOSim()
+      new ModuleIOSim( swerve::pidf::flconfig ),
+      new ModuleIOSim( swerve::pidf::frconfig ),
+      new ModuleIOSim( swerve::pidf::blconfig ),
+      new ModuleIOSim( swerve::pidf::brconfig )
     );
   }
   ConfigureBindings();

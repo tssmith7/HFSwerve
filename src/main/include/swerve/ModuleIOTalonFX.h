@@ -10,19 +10,26 @@
 
 class ModuleIOTalonFX : public ModuleIO {
 public:
-    ModuleIOTalonFX( ModuleConfigs configs );
+    ModuleIOTalonFX( const ModuleConfigs& configs );
 
     virtual void UpdateInputs(ModuleIO::Inputs& inputs) override;
 
-    virtual void setDriveVoltage( units::volt_t volts ) override;
+    virtual void SetDriveOpenLoop( double percent ) override;
 
-    virtual void setTurnVoltage( units::volt_t volts ) override;
+    virtual void SetTurnOpenLoop( double percent ) override;
 
-    virtual void setDriveBrakeMode( bool enable ) override;
+    virtual void SetDriveWheelVelocity( units::radians_per_second_t velocity ) override;
 
-    virtual void setTurnBrakeMode( bool enable ) override;
+    virtual void SetTurnPosition( units::radian_t position ) override;
+
+    virtual void SetDriveBrakeMode( bool enable ) override;
+
+    virtual void SetTurnBrakeMode( bool enable ) override;
+
+    virtual int GetIndex() override { return index; }
 
 private:
+    int index;
     ctre::phoenix6::hardware::TalonFX m_driveMotor;
     ctre::phoenix6::hardware::TalonFX m_turnMotor;
     ctre::phoenix6::hardware::CANcoder m_encoder;
@@ -41,10 +48,6 @@ private:
     ctre::phoenix6::StatusSignal<units::turns_per_second_t> turnVelocity = m_turnMotor.GetVelocity();
     ctre::phoenix6::StatusSignal<units::volt_t> turnAppliedVolts = m_turnMotor.GetMotorVoltage();
     ctre::phoenix6::StatusSignal<units::ampere_t> turnCurrent = m_turnMotor.GetSupplyCurrent();
-
-        // SDS Mk4i L2 ratios
-    const double driveGearRatio = 6.75;
-    const double turnGearRatio = 150.0 / 7.0;
 
     bool isTurnMotorInverted = true;
 };

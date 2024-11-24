@@ -15,7 +15,7 @@ public:
         std::vector<units::second_t> odometryYawTimestamps;
         std::vector<units::radian_t> odometryYawPositions;
 
-        void processInputs( std::string key );
+        void LogInputs( std::string key );
     };
 
     virtual void UpdateInputs(Inputs &inputs) {}

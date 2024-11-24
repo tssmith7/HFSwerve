@@ -8,15 +8,13 @@
 
 #include <frc/kinematics/SwerveModuleState.h>
 #include <frc/kinematics/SwerveModulePosition.h>
-#include <frc/controller/PIDController.h>
-#include <frc/controller/SimpleMotorFeedforward.h>
 
 #include "swerve/ModuleIO.h"
 
 // Class for each swerve module on the robot
 class Module {
 public:
-    Module( ModuleIO* io, const ModuleConfigs& configs );
+    Module( ModuleIO* io );
     void Periodic();
     frc::SwerveModuleState RunSetpoint( const frc::SwerveModuleState& state );
     void RunCharacterization( const units::volt_t volts );
@@ -37,11 +35,6 @@ private:
     std::unique_ptr<ModuleIO> io;
 
     ModuleIO::Inputs inputs;
-
-    // Use a software PID controller and feedforward for the turn motor.
-    frc::PIDController m_turnPIDController;
-    frc::PIDController m_drivePIDController;
-    frc::SimpleMotorFeedforward<units::radian>* m_driveFF;
 
     std::optional<units::radian_t> turnRelativeOffset;
     std::optional<units::radian_t> angleSetpoint;

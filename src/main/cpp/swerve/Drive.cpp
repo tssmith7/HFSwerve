@@ -35,10 +35,10 @@ Drive::Drive(
                     frc::Translation2d{-( swerve::physical::kDriveBaseLength / 2 ), -( swerve::physical::kDriveBaseWidth / 2 )} },
     m_odometry{ m_kinematics, rawGyroRotation, lastModulePositions, frc::Pose2d{} }
 {
-    m_modules[0] = std::unique_ptr<Module>( new Module( flModule, flconfig ) );
-    m_modules[1] = std::unique_ptr<Module>( new Module( frModule, frconfig ) );
-    m_modules[2] = std::unique_ptr<Module>( new Module( blModule, blconfig ) );
-    m_modules[3] = std::unique_ptr<Module>( new Module( brModule, brconfig ) );
+    m_modules[0] = std::unique_ptr<Module>( new Module( flModule ) );
+    m_modules[1] = std::unique_ptr<Module>( new Module( frModule ) );
+    m_modules[2] = std::unique_ptr<Module>( new Module( blModule ) );
+    m_modules[3] = std::unique_ptr<Module>( new Module( brModule ) );
 
     TalonOdometryThread::GetInstance()->Start();
     
@@ -112,7 +112,7 @@ void Drive::Periodic( void ) {
     TalonOdometryThread::GetInstance()->odometryLock.unlock();
 
         // Log new input values
-    gyroInputs.processInputs( "Swerve/Gyro" );
+    gyroInputs.LogInputs( "Swerve/Gyro" );
     for( int i=0; i<4; ++i ) {
         m_modules[i]->Periodic();
     }
@@ -207,7 +207,7 @@ void Drive::SetPose( frc::Pose2d pose ) {
     );
 }
 
-void GyroIO::Inputs::processInputs( std::string key ) {
+void GyroIO::Inputs::LogInputs( std::string key ) {
     AUTOLOG( key, connected )
     AUTOLOG( key, yawPosition )
     AUTOLOG( key, yawVelocity )

@@ -52,8 +52,8 @@ struct ModuleConfigs {
     int turnCanId;
     int encoderCanId;
     double absoluteEncoderOffset;
-    TuningParams turnTune;
-    TuningParams driveTune;
+    MotionConfig<units::radian> turnTune;
+    MotionConfig<units::radian> driveTune;
 };
 
 
@@ -75,16 +75,22 @@ public:
         std::vector<units::radian_t> odometryDrivePositions;
         std::vector<units::radian_t> odometryTurnPositions;
 
-        void processInputs( std::string key );
+        void LogInputs( std::string key );
     };
 
     virtual void UpdateInputs(Inputs &inputs) =0;
 
-    virtual void setDriveVoltage( units::volt_t volts ) =0;
+    virtual void SetDriveOpenLoop( double percent ) =0;
 
-    virtual void setTurnVoltage( units::volt_t volts ) =0;
+    virtual void SetTurnOpenLoop( double percent ) =0;
 
-    virtual void setDriveBrakeMode( bool enable ) =0;
+    virtual void SetDriveWheelVelocity( units::radians_per_second_t velocity ) =0;
 
-    virtual void setTurnBrakeMode( bool enable ) =0;
+    virtual void SetTurnPosition( units::radian_t position ) =0;
+
+    virtual void SetDriveBrakeMode( bool enable ) =0;
+
+    virtual void SetTurnBrakeMode( bool enable ) =0;
+
+    virtual int GetIndex() =0;
 };
