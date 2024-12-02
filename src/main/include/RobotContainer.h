@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include <frc2/command/button/CommandXboxController.h>
+#include <frc2/command/button/CommandXBoxController.h>
 #include <frc2/command/CommandPtr.h>
 
 #include "swerve/Drive.h"
@@ -19,5 +19,6 @@ class RobotContainer {
   void ConfigureBindings();
 
   Drive *m_drive;
+
   frc2::CommandXboxController m_controller{0};
 };

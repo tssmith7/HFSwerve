@@ -48,7 +48,7 @@ void TalonOdometryThread::Start() {
 
 
 void TalonOdometryThread::Run() {
-    fmt::print( "       ============== TalonOdometryThread started ...\n" );
+    fmt::print( "       ============== TalonOdometryThread started isCANFID={} ...\n", isCANFD );
 
     while( 1 ) {
         signalsLock.lock();

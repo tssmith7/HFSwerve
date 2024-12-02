@@ -11,14 +11,18 @@
 
 #include "swerve/ModuleIO.h"
 
-const TuningParams turnTune = { 0.8, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };      // turn PIDSGVA
-const TuningParams driveTune = { 0.1, 0.0, 0.0, 0.0, 0.0, 0.113, 0.0 };   // drive PIDSGVA
+const TuningParams turnTune = { .1, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };      // turn PIDSGVA
+const TuningParams driveTune = { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0013, 0.0 };   // drive PIDSGVA
+
+const char canivoreCanBus[] = "Drivetrain";
+
+const int pigeon2Id = 13;
 
 const ModuleConfigs flconfig = {
     1,          // index
-    "drive",    // canBus
-    1,          // driveCanId
-    2,          // turnCanId
+    canivoreCanBus,    // canBus
+    1,          // turnCanId
+    2,          // driveCanId
     9,          // encoderCanId
     -0.322,     // absoluteEncoderOffset
     turnTune,   // turn PIDSGVA
@@ -27,9 +31,9 @@ const ModuleConfigs flconfig = {
 
 const ModuleConfigs frconfig = {
     2,          // index
-    "drive",    // canBus
-    3,          // driveCanId
-    4,          // turnCanId
+    canivoreCanBus,    // canBus
+    3,          // turnCanId
+    4,          // driveCanId
     10,         // encoderCanId
     0.342,      // absoluteEncoderOffset
     turnTune,   // turn PIDSGVA
@@ -38,9 +42,9 @@ const ModuleConfigs frconfig = {
 
 const ModuleConfigs blconfig = {
     3,          // index
-    "drive",    // canBus
-    5,          // driveCanId
-    6,          // turnCanId
+    canivoreCanBus,    // canBus
+    5,          // turnCanId
+    6,          // driveCanId
     11,         // encoderCanId
     0.097,      // absoluteEncoderOffset
     turnTune,   // turn PIDSGVA
@@ -49,9 +53,9 @@ const ModuleConfigs blconfig = {
 
 const ModuleConfigs brconfig = {
     4,          // index
-    "drive",    // canBus
-    7,          // driveCanId
-    8,          // turnCanId
+    canivoreCanBus,    // canBus
+    7,          // turnCanId
+    8,          // driveCanId
     12,         // encoderCanId
     0.390,      // absoluteEncoderOffset
     turnTune,   // turn PIDSGVA

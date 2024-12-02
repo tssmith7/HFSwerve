@@ -22,6 +22,7 @@ class Drive : public frc2::SubsystemBase {
 public:
     Drive(GyroIO*, ModuleIO*, ModuleIO*, ModuleIO*, ModuleIO*);
     
+    void ArcadeDrive( double xPercent, double yPercent, double omegaPercent );
     void RunVelocity( frc::ChassisSpeeds speeds );
     void Periodic();
 
