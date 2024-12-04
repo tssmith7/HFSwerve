@@ -21,13 +21,9 @@
 #include <frc/kinematics/SwerveModulePosition.h>
 
 /*
- *  AUTOLOG macro can log the following:
- *      intrinsic data types, 
- *      vectors of intrinsic data types, 
- *      unit types,
- *      vectors of unit types,
- *      StructSerializable types,
- *      std::optional wrapped types
+ *  AUTOLOG macro can log the following data types:
+ *      intrinsics, vectors of intrinsics, units, vectors of units, StructSerializable,
+ *      std::optional<> wrapped types
  * 
  *  It uses the variable name as the field name and will add the units abbreviation for unit types.  
  */
