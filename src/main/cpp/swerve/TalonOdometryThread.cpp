@@ -5,7 +5,8 @@
 
 
 TalonOdometryThread* TalonOdometryThread::singleton = nullptr;
-const units::hertz_t TalonOdometryThread::ODOMETRY_FREQUENCY = 250.0_Hz;
+const units::hertz_t TalonOdometryThread::CANFD_ODOMETRY_FREQUENCY = 250.0_Hz;
+const units::hertz_t TalonOdometryThread::RIO_ODOMETRY_FREQUENCY = 100.0_Hz;
 
 TalonOdometryThread* TalonOdometryThread::GetInstance() {
     if( singleton == nullptr ) {
@@ -28,9 +29,11 @@ std::queue<double>* TalonOdometryThread::RegisterSignal(
     ctre::phoenix6::hardware::ParentDevice& device, 
     ctre::phoenix6::BaseStatusSignal* signal) 
 {
+    ctre::phoenix6::CANBus canBus( device.GetNetwork() );
+
     signalsLock.lock();
     odometryLock.lock();
-    isCANFD = ctre::phoenix6::CANBus::IsNetworkFD( device.GetNetwork() );
+    isCANFD = canBus.IsNetworkFD();
     signals.push_back( signal );
     std::queue<double>* newQ = new std::queue<double>{};
     queues.push_back( newQ );
@@ -53,9 +56,9 @@ void TalonOdometryThread::Run() {
     while( 1 ) {
         signalsLock.lock();
         if( isCANFD ) {
-            ctre::phoenix6::BaseStatusSignal::WaitForAll( 2.0 / ODOMETRY_FREQUENCY, signals );
+            ctre::phoenix6::BaseStatusSignal::WaitForAll( 2.0 / CANFD_ODOMETRY_FREQUENCY, signals );
         } else {
-            std::this_thread::sleep_for( std::chrono::milliseconds( (int64_t) (1000.0 / ODOMETRY_FREQUENCY.value()) ) );
+            std::this_thread::sleep_for( std::chrono::milliseconds( (int64_t) (1000.0 / RIO_ODOMETRY_FREQUENCY.value()) ) );
             if( signals.size() > 0 ) {
                 ctre::phoenix6::BaseStatusSignal::RefreshAll( signals );
             }

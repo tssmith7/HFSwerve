@@ -7,14 +7,15 @@ ModuleIOTalonFX::ModuleIOTalonFX( ModuleConfigs configs )
       m_turnMotor{ configs.turnCanId, configs.canBus },
       m_encoder{ configs.encoderCanId, configs.canBus }
 {
+  ctre::phoenix6::CANBus canBus{ configs.canBus };
   ctre::phoenix6::configs::TalonFXConfiguration driveConfigs{};
-  driveConfigs.CurrentLimits.SupplyCurrentLimit = 40;
+  driveConfigs.CurrentLimits.SupplyCurrentLimit = 40_A;
   driveConfigs.CurrentLimits.SupplyCurrentLimitEnable = true;
   m_driveMotor.GetConfigurator().Apply(driveConfigs);
   setDriveBrakeMode( true );
 
   ctre::phoenix6::configs::TalonFXConfiguration turnConfigs{};
-  turnConfigs.CurrentLimits.SupplyCurrentLimit = 30;
+  turnConfigs.CurrentLimits.SupplyCurrentLimit = 30_A;
   turnConfigs.CurrentLimits.SupplyCurrentLimitEnable = true;
   m_turnMotor.GetConfigurator().Apply(turnConfigs);
   setTurnBrakeMode( true );
@@ -23,8 +24,12 @@ ModuleIOTalonFX::ModuleIOTalonFX( ModuleConfigs configs )
   encoderConfigs.MagnetSensor.MagnetOffset = configs.absoluteEncoderOffset;
   m_encoder.GetConfigurator().Apply( encoderConfigs );
 
+  units::hertz_t odom_freq = TalonOdometryThread::RIO_ODOMETRY_FREQUENCY;
+  if( canBus.IsNetworkFD() ) {
+    odom_freq = TalonOdometryThread::CANFD_ODOMETRY_FREQUENCY;
+  }
   ctre::phoenix6::BaseStatusSignal::SetUpdateFrequencyForAll( 
-    TalonOdometryThread::ODOMETRY_FREQUENCY, 
+    odom_freq, 
     drivePosition, 
     turnPosition
   );

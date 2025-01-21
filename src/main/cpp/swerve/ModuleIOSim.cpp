@@ -5,13 +5,14 @@
 #include <units/moment_of_inertia.h>
 #include <frc/Timer.h>
 #include <frc/system/plant/DCMotor.h>
+#include <frc/system/plant/LinearSystemId.h>
 
 #include "swerve/SwerveConstants.h"
 #include "swerve/ModuleIOSim.h"
 
 ModuleIOSim::ModuleIOSim() :
-    driveSim{ frc::DCMotor::NEO(), swerve::physical::kDriveGearRatio, 0.025_kg_sq_m },
-    turnSim{ frc::DCMotor::NEO(), swerve::physical::kTurnGearRatio, 0.004_kg_sq_m }
+    driveSim{ frc::LinearSystemId::DCMotorSystem( frc::DCMotor::NEO(), 0.025_kg_sq_m, swerve::physical::kDriveGearRatio ), frc::DCMotor::NEO()},
+    turnSim{ frc::LinearSystemId::DCMotorSystem(frc::DCMotor::NEO(), 0.004_kg_sq_m, swerve::physical::kTurnGearRatio), frc::DCMotor::NEO()}
 {
     std::srand(std::time(nullptr));
     double random_number = std::rand() / (1.0 * RAND_MAX );  // [0 - 1.0] range

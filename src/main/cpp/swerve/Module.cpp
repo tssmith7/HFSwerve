@@ -44,7 +44,7 @@ void Module::Periodic( ) {
 
         if( speedSetpoint ) {
             units::meters_per_second_t adjustSpeed = speedSetpoint.value() * 
-                std::pow( cos( m_turnPIDController.GetPositionError() ), 3); 
+                std::pow( cos( m_turnPIDController.GetError() ), 3); 
 
             units::radians_per_second_t wheelVelocity = adjustSpeed / swerve::physical::kDriveMetersPerWheelRotation;
             
@@ -67,7 +67,8 @@ void Module::Periodic( ) {
 frc::SwerveModuleState Module::RunSetpoint( const frc::SwerveModuleState& state ) {
 
     // Optimize the state based on the current module turn angle
-    frc::SwerveModuleState optimizedState = frc::SwerveModuleState::Optimize( state, GetAngle() );
+    frc::SwerveModuleState optimizedState = state;
+    optimizedState.Optimize( GetAngle() );
 
     // Update the setpoints
     angleSetpoint = optimizedState.angle.Radians();

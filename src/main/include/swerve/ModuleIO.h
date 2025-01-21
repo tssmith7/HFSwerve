@@ -51,7 +51,7 @@ struct ModuleConfigs {
     int turnCanId;
     int driveCanId;
     int encoderCanId;
-    double absoluteEncoderOffset;
+    units::turn_t absoluteEncoderOffset;
     TuningParams turnTune;
     TuningParams driveTune;
 };

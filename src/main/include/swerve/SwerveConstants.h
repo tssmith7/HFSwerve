@@ -11,10 +11,11 @@
 
 #include "swerve/ModuleIO.h"
 
-const TuningParams turnTune = { .1, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };      // turn PIDSGVA
-const TuningParams driveTune = { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0013, 0.0 };   // drive PIDSGVA
 
-const char canivoreCanBus[] = "Drivetrain";
+const TuningParams turnTune = { 0.22, 0.0, 0, 0, 0.0, 0, 0.0 };      // turn PIDSGVA
+const TuningParams driveTune = { 0.0006, 0.0, 0.0, 0.0, 0.0, 0.12, 0.00087264};   // drive PIDSGVA
+
+const char canivoreCanBus[] = "";
 
 const int pigeon2Id = 13;
 
@@ -24,7 +25,7 @@ const ModuleConfigs flconfig = {
     1,          // turnCanId
     2,          // driveCanId
     9,          // encoderCanId
-    -0.322,     // absoluteEncoderOffset
+    -0.2229_tr, // absoluteEncoderOffset
     turnTune,   // turn PIDSGVA
     driveTune   // drive PIDSGVA
 };
@@ -35,7 +36,7 @@ const ModuleConfigs frconfig = {
     3,          // turnCanId
     4,          // driveCanId
     10,         // encoderCanId
-    0.342,      // absoluteEncoderOffset
+    -0.1743_tr, // absoluteEncoderOffset
     turnTune,   // turn PIDSGVA
     driveTune   // drive PIDSGVA
 };
@@ -46,7 +47,7 @@ const ModuleConfigs blconfig = {
     5,          // turnCanId
     6,          // driveCanId
     11,         // encoderCanId
-    0.097,      // absoluteEncoderOffset
+    -0.4475_tr, // absoluteEncoderOffset
     turnTune,   // turn PIDSGVA
     driveTune   // drive PIDSGVA
 };
@@ -57,7 +58,7 @@ const ModuleConfigs brconfig = {
     7,          // turnCanId
     8,          // driveCanId
     12,         // encoderCanId
-    0.390,      // absoluteEncoderOffset
+    0.13696_tr, // absoluteEncoderOffset
     turnTune,   // turn PIDSGVA
     driveTune   // drive PIDSGVA
 };
@@ -101,8 +102,8 @@ namespace swerve {
 
     namespace physical {
         // The width of the drive base from the center of one module to another adjacent one.
-        constexpr units::meter_t kDriveBaseWidth = 23.25_in * 1.08;
-        constexpr units::meter_t kDriveBaseLength = 22.5_in * 1.08;
+        constexpr units::meter_t kDriveBaseWidth = 22.75_in * 1.0;
+        constexpr units::meter_t kDriveBaseLength = 22.75_in * 1.0;
 
         const units::meter_t kDriveBaseRadius = 
             units::math::hypot(swerve::physical::kDriveBaseWidth, swerve::physical::kDriveBaseLength) / 2.0;
@@ -110,12 +111,12 @@ namespace swerve {
         // The wheel diameter.
         constexpr units::inch_t kWheelDiameter = 4_in;
 
-        // The max RPM of the drive motors (Falcon 500s)
-        constexpr units::revolutions_per_minute_t kDriveRPM = 6380_rpm;
+        // The max RPM of the drive motors (Kraken X60)
+        constexpr units::revolutions_per_minute_t kDriveRPM = 6000_rpm;
 
-        // Gear ratio of the drive motors for a SDS Mk4i L2
+        // Gear ratio of the drive motors for a SDS Mk4i L3
         // 6.75 rotations of the drive motor is one rotation of the wheel.
-        constexpr double kDriveGearRatio = 6.75;
+        constexpr double kDriveGearRatio = 6.12;
 
         // Compound unit for the meter per revolution constant.
         using meters_per_rev = units::compound_unit<units::meters, units::inverse<units::turns>>;
@@ -138,10 +139,5 @@ namespace swerve {
         // The Maximum translation speed for the robot under Joystick control
         constexpr units::meters_per_second_t kDriveSpeedLimit = kMaxDriveSpeed;
 
-
-        constexpr double kFrontLeftAbsoluteOffset = -0.322;
-        constexpr double kFrontRightAbsoluteOffset = 0.342;
-        constexpr double kBackLeftAbsoluteOffset = 0.097;
-        constexpr double kBackRightAbsoluteOffset = 0.39;
     }
 }

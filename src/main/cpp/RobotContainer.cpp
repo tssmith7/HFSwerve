@@ -37,6 +37,15 @@ void RobotContainer::ConfigureBindings() {
       [this] { return m_controller.GetRightX(); }
     )
   );
+
+
+    // Run SysId routines when holding back/start and X/Y.
+    // Note that each routine should be run exactly once in a single log.
+    (m_controller.Back() && m_controller.Y()).WhileTrue(m_drive->SysIdDynamic(frc2::sysid::Direction::kForward));
+    (m_controller.Back() && m_controller.X()).WhileTrue(m_drive->SysIdDynamic(frc2::sysid::Direction::kReverse));
+    (m_controller.Start() && m_controller.Y()).WhileTrue(m_drive->SysIdQuasistatic(frc2::sysid::Direction::kForward));
+    (m_controller.Start() && m_controller.X()).WhileTrue(m_drive->SysIdQuasistatic(frc2::sysid::Direction::kReverse));
+
 }
 
 frc2::CommandPtr RobotContainer::GetAutonomousCommand() {
