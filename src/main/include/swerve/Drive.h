@@ -22,7 +22,6 @@ class Drive : public frc2::SubsystemBase {
 public:
     Drive(GyroIO*, ModuleIO*, ModuleIO*, ModuleIO*, ModuleIO*);
     
-    // void ArcadeDrive( double xPercent, double yPercent, double omegaPercent );
     void RunVelocity( frc::ChassisSpeeds speeds );
     void Periodic();
 
@@ -36,6 +35,8 @@ public:
 
     wpi::array<frc::SwerveModuleState,4U>& GetModuleStates();
 
+    void SetWheelAngles( std::vector<units::radian_t> );
+    void SetDriveVelocity( units::meters_per_second_t );
     frc2::CommandPtr SysIdQuasistatic( frc2::sysid::Direction dir ) { return sysId->Quasistatic( dir ); }
     frc2::CommandPtr SysIdDynamic( frc2::sysid::Direction dir ) { return sysId->Dynamic( dir ); }
 

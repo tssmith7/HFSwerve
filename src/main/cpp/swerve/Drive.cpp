@@ -85,16 +85,6 @@ Drive::Drive(
 
 }
 
-// void Drive::ArcadeDrive( double xPercent, double yPercent, double omegaPercent ) {
-//     auto x = xPercent * swerve::physical::kDriveSpeedLimit;
-//     auto y = yPercent * swerve::physical::kDriveSpeedLimit;
-//     auto omega = omegaPercent * swerve::physical::kTurnSpeedLimit;
-
-//     frc::ChassisSpeeds speeds{ x, y, omega };
-
-//     RunVelocity( speeds );
-// }
-
 void Drive::RunVelocity( frc::ChassisSpeeds speeds ) {
 
     frc::ChassisSpeeds discreteSpeeds = frc::ChassisSpeeds::Discretize( speeds, 20_ms );
@@ -179,6 +169,19 @@ void Drive::Periodic( void ) {
     DataLogger::Log( "Swerve/Pose2d", m_odometry.GetEstimatedPosition() );
     m_field.SetRobotPose( m_odometry.GetEstimatedPosition() );
 }
+
+void Drive::SetWheelAngles( std::vector<units::radian_t> angles ) {
+    for( int i=0; i<4; ++i ) {
+        m_modules[i]->RunSetpoint( { 0_mps, angles[i] } );
+    }
+}
+
+void Drive::SetDriveVelocity( units::meters_per_second_t vel ) {
+    for( int i=0; i<4; ++i ) {
+        m_modules[i]->RunSetpoint( { vel, m_modules[i]->GetAngle() } );
+    }
+}
+
 
 wpi::array<frc::SwerveModuleState,4U>& Drive::GetModuleStates() {
     static wpi::array<frc::SwerveModuleState,4U> states{wpi::empty_array};
