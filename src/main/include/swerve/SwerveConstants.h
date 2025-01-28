@@ -22,8 +22,8 @@ namespace swerve {
 
     namespace physical {
         // The width of the drive base from the center of one module to another adjacent one.
-        constexpr units::meter_t kDriveBaseWidth = 23.25_in * 1.08;
-        constexpr units::meter_t kDriveBaseLength = 22.5_in * 1.08;
+        constexpr units::meter_t kDriveBaseWidth = 22.75_in * 1.0;
+        constexpr units::meter_t kDriveBaseLength = 22.75_in * 1.0;
 
         const units::meter_t kDriveBaseRadius = 
             units::math::hypot(swerve::physical::kDriveBaseWidth, swerve::physical::kDriveBaseLength) / 2.0;
@@ -31,12 +31,12 @@ namespace swerve {
         // The wheel diameter.
         constexpr units::inch_t kWheelDiameter = 4_in;
 
-        // The max RPM of the drive motors (Falcon 500s)
-        constexpr units::revolutions_per_minute_t kDriveRPM = 6380_rpm;
+        // The max RPM of the drive motors (Kraken X60)
+        constexpr units::revolutions_per_minute_t kDriveRPM = 6000_rpm;
 
-        // Gear ratio of the drive motors for a SDS Mk4i L2
+        // Gear ratio of the drive motors for a SDS Mk4i L3
         // 6.75 rotations of the drive motor is one rotation of the wheel.
-        constexpr double kDriveGearRatio = 6.75;
+        constexpr double kDriveGearRatio = 6.12;
 
         // Compound unit for the meter per revolution constant.
         using meters_per_rev = units::compound_unit<units::meters, units::inverse<units::turns>>;
@@ -58,9 +58,14 @@ namespace swerve {
 
         // The Maximum translation speed for the robot under Joystick control
         constexpr units::meters_per_second_t kDriveSpeedLimit = kMaxDriveSpeed;
+
     }
 
     namespace pidf {
+
+        const char swerveCanBus[] = "";
+
+        const int pigeon2Id = 13;
 
         const TuningParams turnTune = { 0.8, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };      // turn PIDSGVA
         const TuningParams driveTune = { 0.1, 0.0, 0.0, 0.0, 0.0, 0.113, 0.0 };   // drive PIDSGVA
@@ -74,44 +79,44 @@ namespace swerve {
 
         const ModuleConfigs flconfig = {
             0,          // index
-            "drive",    // canBus
+            swerveCanBus,    // canBus
             1,          // driveCanId
             2,          // turnCanId
             9,          // encoderCanId
-            -0.322,     // absoluteEncoderOffset
+            -0.2229_tr, // absoluteEncoderOffset
             {turnTune, turnMP},   // turn control
             {driveTune, driveMP}  // drive control
         };
 
         const ModuleConfigs frconfig = {
             1,          // index
-            "drive",    // canBus
+            swerveCanBus,    // canBus
             3,          // driveCanId
             4,          // turnCanId
             10,         // encoderCanId
-            0.342,      // absoluteEncoderOffset
+           -0.1743_tr, // absoluteEncoderOffset
             {turnTune, turnMP},   // turn control
             {driveTune, driveMP}  // drive control
         };
 
         const ModuleConfigs blconfig = {
             2,          // index
-            "drive",    // canBus
+            swerveCanBus,    // canBus
             5,          // driveCanId
             6,          // turnCanId
             11,         // encoderCanId
-            0.097,      // absoluteEncoderOffset
+            -0.4475_tr, // absoluteEncoderOffset
             {turnTune, turnMP},   // turn control
             {driveTune, driveMP}  // drive control
         };
 
         const ModuleConfigs brconfig = {
             3,          // index
-            "drive",    // canBus
+            swerveCanBus,    // canBus
             7,          // driveCanId
             8,          // turnCanId
             12,         // encoderCanId
-            0.390,      // absoluteEncoderOffset
+            0.13696_tr, // absoluteEncoderOffset
             {turnTune, turnMP},   // turn control
             {driveTune, driveMP}  // drive control
         };

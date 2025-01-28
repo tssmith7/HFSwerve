@@ -19,14 +19,6 @@
 
 #include "DataLogger.h"
 
-#define SEND_LOG_DATA(s,val) \
-    if( GetInstance().isFMSAttached ) { \
-        GetInstance().Send(s,val); \
-    } else { \
-        GetInstance().SendNT(s,val); \
-    } 
-
-
 DataLogger* DataLogger::singleton = nullptr;
 
 DataLogger& DataLogger::GetInstance() {
@@ -42,71 +34,22 @@ DataLogger& DataLogger::GetInstance() {
     return *singleton;
 }
 
-void DataLogger::Log( const std::string& s, double val ) { SEND_LOG_DATA(s,val) }
-void DataLogger::Log( const std::string& s, std::span<const double> a ) { SEND_LOG_DATA(s,a) }
-void DataLogger::Log( const std::string& s, int64_t val ) { SEND_LOG_DATA(s,val) }
-void DataLogger::Log( const std::string& s, std::span<const int64_t> a ) { SEND_LOG_DATA(s,a) }
-void DataLogger::Log( const std::string& s, bool val ) { SEND_LOG_DATA(s,val) }
-void DataLogger::Log( const std::string& s, std::span<const bool> a ) { SEND_LOG_DATA(s,a) }
-void DataLogger::Log( const std::string& s, const std::string& val ) { SEND_LOG_DATA(s,val) }
-
-void DataLogger::Log( const std::string& s, const frc::Pose2d& p ) {
-    static double a[3];
-
-    a[0] = p.X().value();
-    a[1] = p.Y().value();
-    a[2] = p.Rotation().Radians().value();
-
-    Log( s, std::span{a} );
-}
-
-void DataLogger::Log( const std::string& s, const std::vector<frc::Pose2d>& pv ) {
-    static std::vector<double> a{256};
-    a.clear();
-    for( size_t i=0; i<pv.size(); ++i ) {
-        a.push_back( pv[i].X().value() );
-        a.push_back( pv[i].Y().value() );
-        a.push_back( pv[i].Rotation().Radians().value() );
+void DataLogger::Log( const std::string& s, const std::string& val ) 
+{
+    if( GetInstance().isFMSAttached ) { 
+        GetInstance().Send(s,val); 
+    } else { 
+        GetInstance().SendNT(s,val); 
     }
-    return Log( s, std::span{ a } );
-}
+ }
 
-void DataLogger::Log( const std::string &s, const wpi::array<frc::SwerveModuleState, 4U> &sms ) {
-    static double a[8];
-
-    if( sms.empty() ) {
-        Log( s, std::span<const double>{} );
-    } 
-
-    for( int i=0; i<4; ++i ) {
-        a[2*i] = sms[i].angle.Radians().value(); 
-        a[2*i + 1] = sms[i].speed.value();
-    }
-
-    Log( s, std::span{a} );
-}
-
-void DataLogger::Log( const std::string &s, const wpi::array<frc::SwerveModulePosition, 4U> &sms ) {
-    static double a[8];
-
-    if( sms.empty() ) {
-        Log( s, std::span<const double>{} );
-    } 
-
-    for( int i=0; i<4; ++i ) {
-        a[2*i] = sms[i].angle.Radians().value(); 
-        a[2*i + 1] = sms[i].distance.value();
-    }
-
-    Log( s, std::span{a} );
-}
-
+// Specialization for a std::optional<Pose2d>
 template<>
 void DataLogger::Log( const std::string &s, const std::optional<frc::Pose2d>& opt ) {
     if( opt.has_value() ) {
         DataLogger::Log( s, opt.value() );
     } else {
-        DataLogger::Log( s, std::vector<double>{} );
+        DataLogger::Log( s, std::span<double>{} );
     }
 }
 
@@ -118,37 +61,22 @@ void DataLogger::Log( const std::string &s ) {
 }
 
 
-
-
-
-void DataLogger::Send( const std::string& s, double val ) { 
+void DataLogger::Send( const std::string& s, const double& val )
+{
     wpi::log::DoubleLogEntry le{ *(log), s };
     le.Append( val );
 }
 
-void DataLogger::Send( const std::string& s, std::span<const double> a ) { 
-    wpi::log::DoubleArrayLogEntry le{ *(log), s };
-    le.Append( a );
-}
-
-void DataLogger::Send( const std::string& s, int64_t val ) { 
+void DataLogger::Send( const std::string& s, const int64_t& val )
+{
     wpi::log::IntegerLogEntry le{ *(log), s };
     le.Append( val );
 }
 
-void DataLogger::Send( const std::string& s, std::span<const int64_t> a ) { 
-    wpi::log::IntegerArrayLogEntry le{ *(log), s };
-    le.Append( a );
-}
-
-void DataLogger::Send( const std::string& s, bool val ) {
+void DataLogger::Send( const std::string& s, const bool& val )
+{
     wpi::log::BooleanLogEntry le{ *(log), s };
     le.Append( val );
-}
-
-void DataLogger::Send( const std::string& s, std::span<const bool> a ) {
-    wpi::log::BooleanArrayLogEntry le{ *(log), s };
-    le.Append( a );
 }
 
 void DataLogger::Send( const std::string& s, const std::string& val ) { 
@@ -157,56 +85,59 @@ void DataLogger::Send( const std::string& s, const std::string& val ) {
 }
 
 
-
-
-
-void DataLogger::SendNT( const std::string& s, double val ) {
+void DataLogger::SendNT( const std::string& s, const double& val )
+{
+    nt::DoublePublisher* publisher;
     if( !nt_map.contains( s ) ) {
-        nt_map[s] = nt_table->GetDoubleTopic( s ).GenericPublish( "double" );
+        publisher = new nt::DoublePublisher();
+        *publisher = nt_table->GetDoubleTopic( s ).Publish( );
+        nt_map[s] = publisher;
+    } else {
+        nt::Publisher *base = nt_map[ s ];
+        publisher = (nt::DoublePublisher*) base;
     }
-    nt_map[s].SetDouble( val );
+    publisher->Set( val );
 }
 
-void DataLogger::SendNT( const std::string& s, std::span<const double> a ) {
+void DataLogger::SendNT( const std::string& s, const int64_t& val )
+{
+    nt::IntegerPublisher* publisher;
     if( !nt_map.contains( s ) ) {
-        nt_map[s] = nt_table->GetDoubleArrayTopic( s ).GenericPublish( "double[]" );
+        publisher = new nt::IntegerPublisher();
+        *publisher = nt_table->GetIntegerTopic( s ).Publish( );
+        nt_map[s] = publisher;
+    } else {
+        nt::Publisher *base = nt_map[ s ];
+        publisher = (nt::IntegerPublisher*) base;
     }
-    nt_map[s].SetDoubleArray( a );
+    publisher->Set( val );
 }
 
-void DataLogger::SendNT( const std::string &s, int64_t val ) {
+void DataLogger::SendNT( const std::string& s, const bool& val )
+{
+    nt::BooleanPublisher* publisher;
     if( !nt_map.contains( s ) ) {
-        nt_map[s] = nt_table->GetIntegerTopic( s ).GenericPublish( "int" );
+        publisher = new nt::BooleanPublisher();
+        *publisher = nt_table->GetBooleanTopic( s ).Publish( );
+        nt_map[s] = publisher;
+    } else {
+        nt::Publisher *base = nt_map[ s ];
+        publisher = (nt::BooleanPublisher*) base;
     }
-    nt_map[s].SetInteger( val );
-}
-
-void DataLogger::SendNT( const std::string& s, std::span<const int64_t> a ) {
-    if( !nt_map.contains( s ) ) {
-        nt_map[s] = nt_table->GetIntegerArrayTopic( s ).GenericPublish( "int[]" );
-    }
-    nt_map[s].SetIntegerArray( a );
-}
-
-void DataLogger::SendNT( const std::string &s, bool val ) {
-    if( !nt_map.contains( s ) ) {
-        nt_map[s] = nt_table->GetBooleanTopic( s ).GenericPublish( "boolean" );
-    }
-    nt_map[s].SetBoolean( val );
-}
-
-void DataLogger::SendNT( const std::string& s, std::span<const bool> a ) {
-    if( !nt_map.contains( s ) ) {
-        nt_map[s] = nt_table->GetBooleanArrayTopic( s ).GenericPublish( "boolean[]" );
-    }
-    nt_map[s].SetBooleanArray( a );
+    publisher->Set( val );
 }
 
 void DataLogger::SendNT( const std::string &s, const std::string &val ) {
+    nt::StringPublisher* publisher;
     if( !nt_map.contains( s ) ) {
-        nt_map[s] = nt_table->GetStringTopic( s ).GenericPublish( "string" );
+        publisher = new nt::StringPublisher();
+        *publisher = nt_table->GetStringTopic( s ).Publish( );
+        nt_map[s] = publisher;
+    } else {
+        nt::Publisher *base = nt_map[ s ];
+        publisher = (nt::StringPublisher*) base;
     }
-    nt_map[s].SetString( val );
+    publisher->Set( val );
 }
 
 

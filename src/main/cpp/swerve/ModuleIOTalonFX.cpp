@@ -12,7 +12,7 @@ ModuleIOTalonFX::ModuleIOTalonFX( const ModuleConfigs& configs ) :
 {
     {
         ctre::phoenix6::configs::TalonFXConfiguration driveConfigs{};
-        driveConfigs.CurrentLimits.SupplyCurrentLimit = 40;
+        driveConfigs.CurrentLimits.SupplyCurrentLimit = 40_A;
         driveConfigs.CurrentLimits.SupplyCurrentLimitEnable = true;
 
         const TuningParams& tune = configs.driveTune.tuner;
@@ -24,12 +24,9 @@ ModuleIOTalonFX::ModuleIOTalonFX( const ModuleConfigs& configs ) :
         driveConfigs.Slot0.kV = tune.kV;
         driveConfigs.Slot0.kA = tune.kA;
 
-        driveConfigs.MotionMagic.MotionMagicCruiseVelocity = 
-            units::turns_per_second_t(configs.driveTune.mp.MaxVelocity).value();            /* in rotations per second */
-        driveConfigs.MotionMagic.MotionMagicAcceleration =
-            units::turns_per_second_squared_t(configs.driveTune.mp.MaxAcceleration).value(); /* in rotations per second^2 */
-        driveConfigs.MotionMagic.MotionMagicJerk =
-            units::turns_per_second_cubed_t(configs.driveTune.mp.MaxJerk).value();          /* in rotations per second^3 */
+        driveConfigs.MotionMagic.MotionMagicCruiseVelocity = configs.driveTune.mp.MaxVelocity;
+        driveConfigs.MotionMagic.MotionMagicAcceleration = configs.driveTune.mp.MaxAcceleration;
+        driveConfigs.MotionMagic.MotionMagicJerk = configs.driveTune.mp.MaxJerk;
 
         driveConfigs.Feedback.SensorToMechanismRatio = swerve::physical::kDriveGearRatio;
         m_driveMotor.GetConfigurator().Apply(driveConfigs);
@@ -38,7 +35,7 @@ ModuleIOTalonFX::ModuleIOTalonFX( const ModuleConfigs& configs ) :
 
     {
         ctre::phoenix6::configs::TalonFXConfiguration turnConfigs{};
-        turnConfigs.CurrentLimits.SupplyCurrentLimit = 30;
+        turnConfigs.CurrentLimits.SupplyCurrentLimit = 30_A;
         turnConfigs.CurrentLimits.SupplyCurrentLimitEnable = true;
 
         const TuningParams& tune = configs.turnTune.tuner;
@@ -50,12 +47,9 @@ ModuleIOTalonFX::ModuleIOTalonFX( const ModuleConfigs& configs ) :
         turnConfigs.Slot0.kV = tune.kV;
         turnConfigs.Slot0.kA = tune.kA;
 
-        turnConfigs.MotionMagic.MotionMagicCruiseVelocity = 
-            units::turns_per_second_t(configs.turnTune.mp.MaxVelocity).value();            /* in rotations per second */
-        turnConfigs.MotionMagic.MotionMagicAcceleration =
-            units::turns_per_second_squared_t(configs.turnTune.mp.MaxAcceleration).value(); /* in rotations per second^2 */
-        turnConfigs.MotionMagic.MotionMagicJerk =
-            units::turns_per_second_cubed_t(configs.turnTune.mp.MaxJerk).value();          /* in rotations per second^3 */
+        turnConfigs.MotionMagic.MotionMagicCruiseVelocity = configs.turnTune.mp.MaxVelocity;
+        turnConfigs.MotionMagic.MotionMagicAcceleration = configs.turnTune.mp.MaxAcceleration;
+        turnConfigs.MotionMagic.MotionMagicJerk = configs.turnTune.mp.MaxJerk;
 
         turnConfigs.Feedback.FeedbackRemoteSensorID = m_encoder.GetDeviceID();
         turnConfigs.Feedback.FeedbackSensorSource = ctre::phoenix6::signals::FeedbackSensorSourceValue::RemoteCANcoder;
@@ -68,8 +62,13 @@ ModuleIOTalonFX::ModuleIOTalonFX( const ModuleConfigs& configs ) :
     encoderConfigs.MagnetSensor.MagnetOffset = configs.absoluteEncoderOffset;
     m_encoder.GetConfigurator().Apply( encoderConfigs );
 
+    ctre::phoenix6::CANBus canBus{ configs.canBus };
+    units::hertz_t odom_freq = TalonOdometryThread::RIO_ODOMETRY_FREQUENCY;
+    if( canBus.IsNetworkFD() ) {
+        odom_freq = TalonOdometryThread::CANFD_ODOMETRY_FREQUENCY;
+    }
     ctre::phoenix6::BaseStatusSignal::SetUpdateFrequencyForAll( 
-        TalonOdometryThread::ODOMETRY_FREQUENCY, 
+        odom_freq, 
         drivePosition, 
         turnPosition
     );

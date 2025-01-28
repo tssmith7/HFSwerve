@@ -19,7 +19,8 @@ public:
     );
     void Start();
 
-    static const units::hertz_t ODOMETRY_FREQUENCY;
+    static const units::hertz_t CANFD_ODOMETRY_FREQUENCY;
+    static const units::hertz_t RIO_ODOMETRY_FREQUENCY;
     std::mutex odometryMutex;
 
 private:

@@ -17,10 +17,10 @@
 #include <frc/smartdashboard/SmartDashboard.h>
 
 #include <pathplanner/lib/auto/AutoBuilder.h>
+#include <pathplanner/lib/config/RobotConfig.h>
 #include <pathplanner/lib/util/PathPlannerLogging.h>
-#include <pathplanner/lib/util/HolonomicPathFollowerConfig.h>
-#include <pathplanner/lib/util/PIDConstants.h>
-#include <pathplanner/lib/util/ReplanningConfig.h>
+#include <pathplanner/lib/controllers/PPHolonomicDriveController.h>
+
 
 Drive::Drive(
     GyroIO* gyroIO, 
@@ -44,18 +44,19 @@ Drive::Drive(
     
     frc::SmartDashboard::PutData("Field", &m_field);
 
-    pathplanner::AutoBuilder::configureHolonomic(
+    pathplanner::RobotConfig config =  pathplanner::RobotConfig::fromGUISettings();
+
+
+    pathplanner::AutoBuilder::configure(
         [this](){ return GetPose(); },
         [this](frc::Pose2d pose){ SetPose(pose); },
         [this](){return m_kinematics.ToChassisSpeeds(GetModuleStates());},
         [this](frc::ChassisSpeeds speeds){ RunVelocity(speeds); },
-        pathplanner::HolonomicPathFollowerConfig( // HolonomicPathFollowerConfig, this should likely live in your Constants class
+        std::make_shared<pathplanner::PPHolonomicDriveController>( // PPHolonomicDriveController, this should likely live in your Constants class
             pathplanner::PIDConstants(4.0, 0.0, 0.0), // Translation PID constants
-            pathplanner::PIDConstants(4.0, 0.0, 0.0), // Rotation PID constants
-            swerve::physical::kMaxDriveSpeed, // Max module speed
-            swerve::physical::kDriveBaseRadius, // Drive base radius. Distance from robot center to furthest module.
-            pathplanner::ReplanningConfig() // Default path replanning config. See the API for the options here
+            pathplanner::PIDConstants(4.0, 0.0, 0.0)  // Rotation PID constants
         ),
+        config, // The robot configuration
         []() {
             // Boolean supplier that controls when the path will be mirrored for the red alliance
             // This will flip the path being followed to the red side of the field.
@@ -70,7 +71,7 @@ Drive::Drive(
         [this] (frc::Pose2d p) { DataLogger::Log( "Odometry/TrajectorySetpoint", p ); } );
 
     sysId = std::unique_ptr<frc2::sysid::SysIdRoutine>( new frc2::sysid::SysIdRoutine{ 
-        frc2::sysid::Config{ std::nullopt, std::nullopt, std::nullopt, std::nullopt },
+        frc2::sysid::Config{ std::nullopt, std::nullopt, std::nullopt, nullptr },
         frc2::sysid::Mechanism { 
             [this] (units::volt_t volts) { 
                 for( int i=0; i<4; ++i ) {
@@ -83,6 +84,16 @@ Drive::Drive(
     } );
 
 }
+
+// void Drive::ArcadeDrive( double xPercent, double yPercent, double omegaPercent ) {
+//     auto x = xPercent * swerve::physical::kDriveSpeedLimit;
+//     auto y = yPercent * swerve::physical::kDriveSpeedLimit;
+//     auto omega = omegaPercent * swerve::physical::kTurnSpeedLimit;
+
+//     frc::ChassisSpeeds speeds{ x, y, omega };
+
+//     RunVelocity( speeds );
+// }
 
 void Drive::RunVelocity( frc::ChassisSpeeds speeds ) {
 
@@ -136,8 +147,8 @@ void Drive::Periodic( void ) {
             m_modules[i]->Stop();
         }
 
-        DataLogger::Log( "Swerve/desiredStates", std::vector<double>{} );
-        DataLogger::Log( "Swerve/optimizedStates", std::vector<double>{} );
+        DataLogger::Log( "Swerve/desiredStates", std::span<frc::SwerveModuleState>{} );
+        DataLogger::Log( "Swerve/optimizedStates", std::span<frc::SwerveModuleState>{} );
     }
 
         // Update odometry
@@ -164,12 +175,13 @@ void Drive::Periodic( void ) {
         m_odometry.UpdateWithTime( sampleTimestamps[i], rawGyroRotation, modulePositions );
     }
 
-    DataLogger::Log( "Swerve/actualStates", GetModuleStates() );
+    DataLogger::Log( "Swerve/actualStates",  GetModuleStates() );
+    DataLogger::Log( "Swerve/Pose2d", m_odometry.GetEstimatedPosition() );
     m_field.SetRobotPose( m_odometry.GetEstimatedPosition() );
 }
 
-wpi::array<frc::SwerveModuleState,4U> Drive::GetModuleStates() {
-    wpi::array<frc::SwerveModuleState,4U> states{wpi::empty_array};
+wpi::array<frc::SwerveModuleState,4U>& Drive::GetModuleStates() {
+    static wpi::array<frc::SwerveModuleState,4U> states{wpi::empty_array};
     for( int i=0; i<4; ++i ) {
         states[i] = m_modules[i]->GetState();
     }

@@ -5,6 +5,7 @@
 #include <units/moment_of_inertia.h>
 #include <frc/Timer.h>
 #include <frc/system/plant/DCMotor.h>
+#include <frc/system/plant/LinearSystemId.h>
 
 #include "swerve/SwerveConstants.h"
 #include "swerve/ModuleIOSim.h"
@@ -12,8 +13,8 @@
 
 ModuleIOSim::ModuleIOSim( const ModuleConfigs& configs ) :
     index{ configs.index },
-    driveSim{ frc::DCMotor::NEO(), swerve::physical::kDriveGearRatio, 0.025_kg_sq_m },
-    turnSim{ frc::DCMotor::NEO(), swerve::physical::kTurnGearRatio, 0.004_kg_sq_m },
+    driveSim{ frc::LinearSystemId::DCMotorSystem( frc::DCMotor::NEO(), 0.025_kg_sq_m, swerve::physical::kDriveGearRatio ), frc::DCMotor::NEO()},
+    turnSim{ frc::LinearSystemId::DCMotorSystem(frc::DCMotor::NEO(), 0.004_kg_sq_m, swerve::physical::kTurnGearRatio), frc::DCMotor::NEO()},
     m_turnPIDController{ configs.turnTune.tuner.kP, configs.turnTune.tuner.kI, configs.turnTune.tuner.kD },
     m_drivePIDController{ configs.driveTune.tuner.kP, configs.driveTune.tuner.kI, configs.driveTune.tuner.kD }
 {
@@ -22,9 +23,8 @@ ModuleIOSim::ModuleIOSim( const ModuleConfigs& configs ) :
         units::unit_t<frc::SimpleMotorFeedforward<units::radian>::kv_unit>{configs.driveTune.tuner.kV}, 
         units::unit_t<frc::SimpleMotorFeedforward<units::radian>::ka_unit>{configs.driveTune.tuner.kA}
     };
-    m_turnPIDController.EnableContinuousInput( -std::numbers::pi , std::numbers::pi );
+    m_turnPIDController.EnableContinuousInput( -std::numbers::pi , std::numbers::pi );    std::srand(std::time(nullptr));
 
-    std::srand(std::time(nullptr));
     double random_number = std::rand() / (1.0 * RAND_MAX );  // [0 - 1.0] range
     turnAbsoluteInitPosition = units::radian_t( random_number * 2.0 * std::numbers::pi );
 }

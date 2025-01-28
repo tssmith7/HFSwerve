@@ -48,10 +48,10 @@ template<class Distance> struct MotionConfig {
 struct ModuleConfigs {
     int index;
     std::string canBus = "";
-    int driveCanId;
     int turnCanId;
+    int driveCanId;
     int encoderCanId;
-    double absoluteEncoderOffset;
+    units::turn_t absoluteEncoderOffset;
     MotionConfig<units::radian> turnTune;
     MotionConfig<units::radian> driveTune;
 };
