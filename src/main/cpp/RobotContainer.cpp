@@ -17,13 +17,23 @@
 
 RobotContainer::RobotContainer() {
 
-  m_drive = new Drive( 
+  if( frc::RobotBase::IsReal() ) {
+    m_drive = new Drive( 
     new GyroIOPigeon2( pigeon2Id, flconfig.canBus ), 
     new ModuleIOTalonFX( flconfig ),
     new ModuleIOTalonFX( frconfig ),
     new ModuleIOTalonFX( blconfig ),
     new ModuleIOTalonFX( brconfig )
-  );
+    );
+  } else {
+    m_drive = new Drive( 
+      new GyroIO(), 
+      new ModuleIOSim( ),
+      new ModuleIOSim( ),
+      new ModuleIOSim( ),
+      new ModuleIOSim( )
+    );
+  }
 
   ConfigureBindings();
 }

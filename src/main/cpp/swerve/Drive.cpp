@@ -44,8 +44,17 @@ Drive::Drive(
     
     frc::SmartDashboard::PutData("Field", &m_field);
 
-    pathplanner::RobotConfig config =  pathplanner::RobotConfig::fromGUISettings();
-
+    pathplanner::RobotConfig config;
+    try {
+        config = pathplanner::RobotConfig::fromGUISettings();
+    } catch( std::exception e ) {
+        config = pathplanner::RobotConfig( 
+            70_kg, 
+            6.8_kg_sq_m, 
+            pathplanner::ModuleConfig( 4_in, 5.4_mps, 1.2, frc::DCMotor::KrakenX60(), 80_A, 1 ),
+            swerve::physical::kDriveBaseWidth
+        );
+    }
 
     pathplanner::AutoBuilder::configure(
         [this](){ return GetPose(); },
@@ -82,7 +91,6 @@ Drive::Drive(
             this
         }
     } );
-
 }
 
 // void Drive::ArcadeDrive( double xPercent, double yPercent, double omegaPercent ) {
