@@ -7,7 +7,7 @@
 #include <frc2/command/button/CommandXBoxController.h>
 #include <frc2/command/CommandPtr.h>
 
-#include "swerve/Drive.h"
+class Drive;
 
 class RobotContainer {
  public:

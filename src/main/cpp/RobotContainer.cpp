@@ -7,6 +7,8 @@
 #include <frc/RobotBase.h>
 #include <frc2/command/Commands.h>
 
+#include "swerve/Drive.h"
+
 #include "swerve/GyroIOPigeon2.h"
 #include "swerve/ModuleIOTalonFX.h"
 #include "swerve/ModuleIOSim.h"
@@ -54,6 +56,11 @@ void RobotContainer::ConfigureBindings() {
     (m_controller.Back() && m_controller.X()).WhileTrue(m_drive->SysIdDynamic(frc2::sysid::Direction::kReverse));
     (m_controller.Start() && m_controller.Y()).WhileTrue(m_drive->SysIdQuasistatic(frc2::sysid::Direction::kForward));
     (m_controller.Start() && m_controller.X()).WhileTrue(m_drive->SysIdQuasistatic(frc2::sysid::Direction::kReverse));
+
+    m_controller.Y().OnTrue( frc2::cmd::RunOnce( [this] { m_drive->SetWheelAngles( {180_deg, 180_deg, 180_deg, 180_deg}); }));
+    m_controller.Y().OnFalse( frc2::cmd::RunOnce( [this] { m_drive->SetWheelAngles( {0_deg, 0_deg, 0_deg, 0_deg}); }));
+    m_controller.X().OnTrue( frc2::cmd::RunOnce( [this] { m_drive->SetDriveVelocity( 3_mps ); } ));
+    m_controller.X().OnFalse( frc2::cmd::RunOnce( [this] { m_drive->SetDriveVelocity( 0_mps ); } ));
 
 }
 
